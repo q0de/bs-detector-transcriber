@@ -20,27 +20,38 @@ frontend_url = os.getenv('FRONTEND_URL')
 if frontend_url and frontend_url not in allowed_origins:
     allowed_origins.append(frontend_url)
 
-# Configure CORS with explicit settings - Flask-CORS will handle OPTIONS automatically
+# Configure CORS globally for all routes - Flask-CORS will handle OPTIONS automatically
 CORS(app, 
-     resources={r"/api/*": {"origins": allowed_origins}},
+     origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"],
      max_age=3600)
 
-print(f"✅ CORS configured for all /api/* routes with origins: {allowed_origins}")
+print(f"✅ CORS configured globally with origins: {allowed_origins}")
 
-# Flask-CORS handles OPTIONS requests automatically, so we don't need custom handlers
-# The after_request hook is kept minimal - Flask-CORS already sets headers correctly
+# Explicit OPTIONS handler for /api/* routes to ensure preflight works
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response = app.make_default_options_response()
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '3600'
+            return response
+
+# Ensure CORS headers are set on all responses
 @app.after_request
 def after_request(response):
-    # Flask-CORS should already set CORS headers, but ensure they're present
     origin = request.headers.get('Origin')
     if origin and origin in allowed_origins:
-        # Ensure headers are set (Flask-CORS should have done this already)
-        if 'Access-Control-Allow-Origin' not in response.headers:
-            response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 # Import routes with error handling
