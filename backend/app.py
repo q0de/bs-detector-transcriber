@@ -45,27 +45,46 @@ print(f"✅ CORS configured for /api/* routes with origins: {allowed_origins}")
 @app.before_request
 def handle_options_preflight():
     """Handle OPTIONS preflight requests explicitly"""
-    if request.method == 'OPTIONS':
-        origin = request.headers.get('Origin')
-        if origin and origin in allowed_origins:
-            response = app.make_default_options_response()
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Max-Age'] = '3600'
-            return response
+    try:
+        if request.method == 'OPTIONS':
+            origin = request.headers.get('Origin')
+            print(f"🔍 OPTIONS request from origin: {origin}")
+            print(f"🔍 Allowed origins: {allowed_origins}")
+            if origin and origin in allowed_origins:
+                print(f"✅ Allowing OPTIONS from {origin}")
+                response = app.make_default_options_response()
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Access-Control-Max-Age'] = '3600'
+                return response
+            else:
+                print(f"⚠️ Origin {origin} not in allowed list")
+    except Exception as e:
+        print(f"❌ OPTIONS handler error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return a response anyway to prevent crash
+        response = app.make_response('')
+        response.status_code = 200
+        return response
 
 # Add after_request hook to ensure CORS headers on all responses
 @app.after_request
 def add_cors_headers(response):
     """Ensure CORS headers are set on all responses"""
-    origin = request.headers.get('Origin')
-    if origin and origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    try:
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    except Exception as e:
+        print(f"❌ CORS header error: {e}")
+        import traceback
+        traceback.print_exc()
     return response
 
 # Import routes with error handling
