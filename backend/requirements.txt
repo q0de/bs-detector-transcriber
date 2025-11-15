@@ -1,6 +1,7 @@
 flask==3.0.0
 flask-cors==4.0.0
 yt-dlp==2023.12.30
+youtube-transcript-api==1.2.3
 openai-whisper==20231117
 anthropic==0.39.0
 torch==2.2.0

@@ -3,12 +3,64 @@ import os
 from anthropic import Anthropic
 from datetime import datetime
 import tempfile
+import re
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
 class VideoProcessor:
     def __init__(self):
         self.whisper_model = None
         self.whisper_module = None
         self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+    
+    def extract_video_id(self, url):
+        """Extract YouTube video ID from URL"""
+        patterns = [
+            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
+            r'(?:embed\/)([0-9A-Za-z_-]{11})',
+            r'^([0-9A-Za-z_-]{11})$'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        return None
+    
+    def get_youtube_transcript(self, video_url):
+        """Try to get transcript directly from YouTube"""
+        try:
+            video_id = self.extract_video_id(video_url)
+            if not video_id:
+                return None
+            
+            print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
+            
+            # Get available transcripts
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            
+            # Try to get English transcript first
+            try:
+                transcript = transcript_list.find_transcript(['en'])
+            except:
+                # If no English, get any available transcript
+                transcript = transcript_list.find_generated_transcript(['en', 'en-US', 'en-GB'])
+            
+            # Fetch the transcript
+            transcript_data = transcript.fetch()
+            
+            # Combine all text segments
+            full_text = ' '.join([entry['text'] for entry in transcript_data])
+            
+            print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
+            return full_text
+            
+        except (TranscriptsDisabled, NoTranscriptFound) as e:
+            print(f"⚠️ No transcript available: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"⚠️ Transcript fetch failed: {str(e)}")
+            return None
     
     def _get_whisper_module(self):
         """Lazy import whisper module"""
@@ -104,53 +156,81 @@ Transcription:
             raise Exception(f"Couldn't analyze with AI: {str(e)}")
     
     def process(self, video_url, analysis_type='summarize'):
-        """Process video: download, transcribe, analyze"""
-        temp_dir = tempfile.mkdtemp()
-        audio_path = os.path.join(temp_dir, 'audio.%(ext)s')
+        """Process video: try YouTube transcript first, then download+transcribe, then analyze"""
+        # Determine platform
+        is_youtube = 'youtube.com' in video_url or 'youtu.be' in video_url
+        platform = 'youtube' if is_youtube else 'instagram'
         
+        # Get video metadata first
         try:
-            # Download video
-            info = self.download_video(video_url, audio_path)
+            ydl_opts = {'quiet': True, 'no_warnings': True}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                title = info.get('title', 'Untitled')
+                duration = info.get('duration', 0)
+                duration_minutes = duration / 60
+        except Exception as e:
+            print(f"⚠️ Couldn't get video metadata: {str(e)}")
+            title = 'Untitled'
+            duration_minutes = 0
+        
+        transcription = None
+        language = 'en'
+        
+        # Try YouTube transcript first (fastest method)
+        if is_youtube:
+            print("🎯 Attempting to use YouTube transcript (faster)...")
+            transcription = self.get_youtube_transcript(video_url)
             
-            # Get actual audio file path
-            actual_audio_path = None
-            for ext in ['m4a', 'webm', 'mp3', 'ogg']:
-                test_path = audio_path.replace('%(ext)s', ext)
-                if os.path.exists(test_path):
-                    actual_audio_path = test_path
-                    break
+            if transcription:
+                print("✅ Using YouTube transcript (no download needed!)")
+            else:
+                print("⚠️ No YouTube transcript available, falling back to download+Whisper...")
+        
+        # If no transcript available, download and transcribe
+        if not transcription:
+            print("📥 Downloading and transcribing video with Whisper...")
+            temp_dir = tempfile.mkdtemp()
+            audio_path = os.path.join(temp_dir, 'audio.%(ext)s')
             
-            if not actual_audio_path:
-                raise Exception("Couldn't find downloaded audio file")
-            
-            # Get video metadata
-            title = info.get('title', 'Untitled')
-            duration = info.get('duration', 0)
-            duration_minutes = duration / 60
-            
-            # Determine platform
-            platform = 'youtube' if 'youtube.com' in video_url or 'youtu.be' in video_url else 'instagram'
-            
-            # Transcribe
-            transcription, language = self.transcribe_audio(actual_audio_path)
-            
-            # Analyze
-            analysis = self.analyze_with_claude(transcription, analysis_type)
-            
-            return {
-                'title': title,
-                'platform': platform,
-                'duration_minutes': duration_minutes,
-                'transcription': transcription,
-                'analysis': analysis,
-                'language': language
-            }
-            
-        finally:
-            # Cleanup
-            import shutil
             try:
-                shutil.rmtree(temp_dir)
-            except:
-                pass
+                # Download video
+                info = self.download_video(video_url, audio_path)
+                
+                # Get actual audio file path
+                actual_audio_path = None
+                for ext in ['m4a', 'webm', 'mp3', 'ogg']:
+                    test_path = audio_path.replace('%(ext)s', ext)
+                    if os.path.exists(test_path):
+                        actual_audio_path = test_path
+                        break
+                
+                if not actual_audio_path:
+                    raise Exception("Couldn't find downloaded audio file")
+                
+                # Transcribe
+                transcription, language = self.transcribe_audio(actual_audio_path)
+                print(f"✅ Transcription complete ({len(transcription)} characters)")
+                
+            finally:
+                # Cleanup
+                import shutil
+                try:
+                    shutil.rmtree(temp_dir)
+                except:
+                    pass
+        
+        # Analyze with Claude
+        print("🤖 Analyzing with Claude AI...")
+        analysis = self.analyze_with_claude(transcription, analysis_type)
+        print("✅ Analysis complete!")
+        
+        return {
+            'title': title,
+            'platform': platform,
+            'duration_minutes': duration_minutes,
+            'transcription': transcription,
+            'analysis': analysis,
+            'language': language
+        }
 
