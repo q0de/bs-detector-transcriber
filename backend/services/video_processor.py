@@ -1,5 +1,4 @@
 import yt_dlp
-import whisper
 import os
 from anthropic import Anthropic
 from datetime import datetime
@@ -8,11 +7,20 @@ import tempfile
 class VideoProcessor:
     def __init__(self):
         self.whisper_model = None
+        self.whisper_module = None
         self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+    
+    def _get_whisper_module(self):
+        """Lazy import whisper module"""
+        if self.whisper_module is None:
+            import whisper
+            self.whisper_module = whisper
+        return self.whisper_module
     
     def _get_whisper_model(self):
         """Lazy load Whisper model"""
         if self.whisper_model is None:
+            whisper = self._get_whisper_module()
             self.whisper_model = whisper.load_model("base")
         return self.whisper_model
     
