@@ -17,6 +17,15 @@ allowed_origins = [frontend_url]
 if frontend_url != 'http://localhost:3000':
     allowed_origins.append('http://localhost:3000')
 
+# TEMPORARY: Allow Vercel domain until FRONTEND_URL is set in Railway
+vercel_domains = [
+    'https://bs-detector-transcriber.vercel.app',
+    'https://bs-detector-transcriber-*.vercel.app'  # Wildcard for preview deployments
+]
+for domain in vercel_domains:
+    if domain not in allowed_origins:
+        allowed_origins.append(domain)
+
 # Configure CORS with explicit settings
 CORS(app, 
      resources={r"/api/*": {"origins": allowed_origins}},
@@ -32,11 +41,19 @@ print(f"✅ CORS configured for all /api/* routes with origins: {allowed_origins
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    # Check exact match or wildcard match for Vercel preview deployments
+    if origin:
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        elif origin and origin.startswith('https://bs-detector-transcriber-') and origin.endswith('.vercel.app'):
+            # Allow any Vercel preview deployment
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 # Handle OPTIONS requests explicitly (for CORS preflight)
@@ -44,14 +61,16 @@ def after_request(response):
 def handle_preflight():
     if request.method == 'OPTIONS':
         origin = request.headers.get('Origin')
-        if origin in allowed_origins:
-            response = app.make_default_options_response()
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Max-Age'] = '3600'
-            return response
+        if origin:
+            # Check exact match or Vercel preview deployment
+            if origin in allowed_origins or (origin.startswith('https://bs-detector-transcriber-') and origin.endswith('.vercel.app')):
+                response = app.make_default_options_response()
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Access-Control-Max-Age'] = '3600'
+                return response
 
 # Import routes with error handling
 try:
