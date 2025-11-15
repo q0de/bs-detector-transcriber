@@ -27,8 +27,11 @@ for domain in vercel_domains:
         allowed_origins.append(domain)
 
 # Configure CORS with explicit settings
+# Allow Vercel domains (including preview deployments)
+cors_origins = allowed_origins + ['https://bs-detector-transcriber.vercel.app', 'https://*.vercel.app']
+
 CORS(app, 
-     resources={r"/api/*": {"origins": allowed_origins}},
+     resources={r"/api/*": {"origins": cors_origins}},
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True,
