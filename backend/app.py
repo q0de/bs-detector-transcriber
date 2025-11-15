@@ -9,16 +9,24 @@ load_dotenv()
 app = Flask(__name__)
 
 # Enable CORS for all routes
+# Allow both localhost (for development) and production frontend URL
+frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+allowed_origins = [frontend_url]
+
+# Also allow localhost:3000 in production for testing
+if frontend_url != 'http://localhost:3000':
+    allowed_origins.append('http://localhost:3000')
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
 
-print("✅ CORS configured for all /api/* routes with origin http://localhost:3000")
+print(f"✅ CORS configured for all /api/* routes with origins: {allowed_origins}")
 
 # Import routes with error handling
 try:
