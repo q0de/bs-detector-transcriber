@@ -17,6 +17,10 @@ app.register_blueprint(videos.bp, url_prefix='/api/videos')
 app.register_blueprint(payments.bp, url_prefix='/api/payments')
 app.register_blueprint(users.bp, url_prefix='/api/users')
 
+@app.route('/', methods=['GET'])
+def root():
+    return {'message': 'Video Transcriber API', 'status': 'running'}, 200
+
 @app.route('/api/health', methods=['GET'])
 def health():
     return {'status': 'healthy', 'timestamp': __import__('datetime').datetime.utcnow().isoformat()}, 200
