@@ -57,32 +57,52 @@ except Exception as e:
     # Don't raise - allow app to start even if routes fail (for debugging)
     print("⚠️ App will start but routes may not work")
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'OPTIONS'])
 def root():
     """Root endpoint - no dependencies, always works"""
     try:
-        return {'message': 'Video Transcriber API', 'status': 'running'}, 200
+        response_data = {'message': 'Video Transcriber API', 'status': 'running'}
+        response = app.make_response(response_data)
+        response.status_code = 200
+        # Ensure CORS headers are set
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
     except Exception as e:
         print(f"❌ Root endpoint error: {e}")
         import traceback
         traceback.print_exc()
-        return {'message': 'Video Transcriber API', 'status': 'error', 'error': str(e)}, 500
+        error_response = app.make_response({'message': 'Video Transcriber API', 'status': 'error', 'error': str(e)})
+        error_response.status_code = 500
+        return error_response
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health():
-    """Health check endpoint - minimal dependencies"""
+    """Health check endpoint - minimal dependencies, no auth required"""
     try:
         import datetime
-        return {
+        response_data = {
             'status': 'healthy', 
             'timestamp': datetime.datetime.utcnow().isoformat(),
             'cors_origins': allowed_origins
-        }, 200
+        }
+        response = app.make_response(response_data)
+        response.status_code = 200
+        # Ensure CORS headers are set
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
     except Exception as e:
         print(f"❌ Health endpoint error: {e}")
         import traceback
         traceback.print_exc()
-        return {'status': 'error', 'error': str(e)}, 500
+        error_response = app.make_response({'status': 'error', 'error': str(e)})
+        error_response.status_code = 500
+        return error_response
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
