@@ -23,17 +23,27 @@ def verify_token(f):
         try:
             # Verify token with Supabase
             supabase = get_supabase_client()
+            print(f"=== AUTH MIDDLEWARE: Verifying token ===")
             response = supabase.auth.get_user(token)
             
+            print(f"Supabase response: {response}")
+            print(f"User: {response.user if response else 'None'}")
+            
             if not response or not response.user:
+                print("❌ No user in response")
                 return jsonify({'success': False, 'error': 'Invalid token'}), 401
             
             # Add user info to request context
             request.user = response.user
             request.user_id = response.user.id
             
+            print(f"✅ User authenticated: {response.user.email} (ID: {response.user.id})")
+            
         except Exception as e:
-            return jsonify({'success': False, 'error': 'Token verification failed'}), 401
+            print(f"❌ Token verification error: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': f'Token verification failed: {str(e)}'}), 401
         
         return f(*args, **kwargs)
     

@@ -91,3 +91,40 @@
   cursor: not-allowed;
 }
 
+.file-upload-area {
+  position: relative;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.file-label {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: 2px dashed var(--border-light);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-light);
+  color: var(--text-medium);
+}
+
+.file-label:hover {
+  border-color: var(--primary-blue);
+  background: var(--bg-white);
+  color: var(--primary-blue);
+}
+
+.file-input:focus + .file-label {
+  border-color: var(--primary-blue);
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+

@@ -41,10 +41,15 @@ def get_usage():
         supabase = get_supabase_client()
         user_id = request.user_id
         
+        print(f"=== GET USAGE: Fetching for user {user_id} ===")
+        
         # Get user from database
-        response = supabase.table('users').select('minutes_used_this_month, monthly_minute_limit, last_reset_date').eq('id', user_id).execute()
+        response = supabase.table('users').select('minutes_used_this_month, monthly_minute_limit, last_reset_date, subscription_tier').eq('id', user_id).execute()
+        
+        print(f"Database response: {response.data}")
         
         if not response.data:
+            print(f"❌ User not found in database: {user_id}")
             return jsonify({'success': False, 'error': 'User not found'}), 404
         
         user = response.data[0]

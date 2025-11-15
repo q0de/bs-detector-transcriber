@@ -41,6 +41,14 @@
   text-decoration: none;
 }
 
+.navbar-links a.btn-primary {
+  color: white !important;
+}
+
+.navbar-links a.btn-primary:hover {
+  color: white !important;
+}
+
 .navbar-user {
   position: relative;
   cursor: pointer;

@@ -16,9 +16,13 @@ def get_video_processor():
 def process_video():
     """Process video from URL"""
     try:
+        print("=== VIDEO PROCESS: Starting ===")
         data = request.get_json()
         video_url = data.get('url')
         analysis_type = data.get('analysis_type', 'summarize')
+        
+        print(f"Video URL: {video_url}")
+        print(f"Analysis type: {analysis_type}")
         
         if not video_url:
             return jsonify({'success': False, 'error': 'Video URL is required'}), 400
@@ -29,18 +33,51 @@ def process_video():
         supabase = get_supabase_client()
         user_id = request.user_id
         
+        print(f"User ID: {user_id}")
+        
         # Get user to check limits
         user_response = supabase.table('users').select('*').eq('id', user_id).execute()
         if not user_response.data:
+            print(f"❌ User not found: {user_id}")
             return jsonify({'success': False, 'error': 'User not found'}), 404
         
         user = user_response.data[0]
+        print(f"✅ User found: {user.get('email')}")
+        
+        # Check if we already have a transcript for this video URL
+        print(f"Checking for existing transcript for URL: {video_url}")
+        existing_video = supabase.table('videos').select('transcription, title, platform, duration_minutes').eq('user_id', user_id).eq('video_url', video_url).order('created_at', desc=True).limit(1).execute()
+        
+        existing_transcript = None
+        video_metadata = {}
+        
+        if existing_video.data and existing_video.data[0].get('transcription'):
+            existing_transcript = existing_video.data[0]['transcription']
+            video_metadata = {
+                'title': existing_video.data[0].get('title', 'Untitled'),
+                'platform': existing_video.data[0].get('platform', 'youtube'),
+                'duration_minutes': float(existing_video.data[0].get('duration_minutes', 0))
+            }
+            print(f"✅ Found existing transcript ({len(existing_transcript)} chars) - will reuse!")
+            print(f"   Title: {video_metadata['title']}")
+            print(f"   Duration: {video_metadata['duration_minutes']} minutes")
         
         # Initialize processor (lazy import)
-        processor = get_video_processor()
+        print("Initializing VideoProcessor...")
+        try:
+            processor = get_video_processor()
+            print("✅ VideoProcessor initialized")
+        except Exception as proc_error:
+            print(f"❌ VideoProcessor initialization failed: {proc_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': f'Video processor initialization failed: {str(proc_error)}'}), 500
         
-        # Estimate duration
-        estimated_duration = processor.estimate_duration(video_url)
+        # Estimate duration (skip if we have existing metadata)
+        if not existing_transcript:
+            estimated_duration = processor.estimate_duration(video_url)
+        else:
+            estimated_duration = video_metadata['duration_minutes'] * 60
         estimated_minutes = math.ceil(estimated_duration / 60)
         
         # Check limit
@@ -57,8 +94,22 @@ def process_video():
                 'limit': limit
             }), 403
         
-        # Process video
-        result = processor.process(video_url, analysis_type)
+        # Process video (use cached transcript if available)
+        if existing_transcript:
+            print("🔄 Reusing cached transcript - only running new analysis!")
+            # Only run Claude analysis with the existing transcript
+            analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
+            result = {
+                'title': video_metadata['title'],
+                'platform': video_metadata['platform'],
+                'duration_minutes': video_metadata['duration_minutes'],
+                'transcription': existing_transcript,
+                'analysis': analysis,
+                'language': 'en'
+            }
+        else:
+            print("📥 No cached transcript - fetching new transcript and analyzing...")
+            result = processor.process(video_url, analysis_type)
         
         # Calculate actual minutes charged (round up)
         actual_minutes = math.ceil(result['duration_minutes'])

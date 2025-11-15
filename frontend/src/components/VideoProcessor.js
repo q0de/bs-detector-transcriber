@@ -5,7 +5,9 @@ import { supabase } from '../services/supabase';
 import './VideoProcessor.css';
 
 function VideoProcessor({ onProcessed }) {
+  const [inputType, setInputType] = useState('url'); // 'url' or 'file'
   const [url, setUrl] = useState('');
+  const [file, setFile] = useState(null);
   const [analysisType, setAnalysisType] = useState('summarize');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,17 +29,30 @@ function VideoProcessor({ onProcessed }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!url) {
+    if (inputType === 'url' && !url) {
       setError('Please enter a video URL');
+      return;
+    }
+    
+    if (inputType === 'file' && !file) {
+      setError('Please select a video file');
+      return;
+    }
+    
+    // File upload is Phase 2 - show message for now
+    if (inputType === 'file') {
+      setError('File upload is coming soon! Please use URL for now.');
       return;
     }
 
     // Check if user is logged in
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.log('No token found, redirecting to signup');
       navigate('/signup');
       return;
     }
+    console.log('User is authenticated, proceeding with video processing');
 
     setLoading(true);
     setError('');
@@ -59,26 +74,68 @@ function VideoProcessor({ onProcessed }) {
     }
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setUrl(''); // Clear URL when file is selected
+    }
+  };
+
   return (
     <div className="video-processor">
       <form onSubmit={handleSubmit} className="processor-form">
         <div className="input-tabs">
-          <button type="button" className="tab active">🔗 Paste link</button>
-          <button type="button" className="tab">📁 File upload</button>
+          <button 
+            type="button" 
+            className={`tab ${inputType === 'url' ? 'active' : ''}`}
+            onClick={() => {
+              setInputType('url');
+              setFile(null);
+            }}
+          >
+            🔗 Paste link
+          </button>
+          <button 
+            type="button" 
+            className={`tab ${inputType === 'file' ? 'active' : ''}`}
+            onClick={() => {
+              setInputType('file');
+              setUrl('');
+            }}
+          >
+            📁 File upload
+          </button>
         </div>
         
         <div className="input-group">
-          <input
-            type="text"
-            placeholder="Paste your YouTube or Instagram URL..."
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              handleEstimate();
-            }}
-            className="video-input"
-            disabled={loading}
-          />
+          {inputType === 'url' ? (
+            <input
+              type="text"
+              placeholder="Paste your YouTube or Instagram URL..."
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                handleEstimate();
+              }}
+              className="video-input"
+              disabled={loading}
+            />
+          ) : (
+            <div className="file-upload-area">
+              <input
+                type="file"
+                id="video-file"
+                accept="video/*"
+                onChange={handleFileChange}
+                className="file-input"
+                disabled={loading}
+              />
+              <label htmlFor="video-file" className="file-label">
+                {file ? `📁 ${file.name}` : '📁 Choose video file or drag and drop'}
+              </label>
+            </div>
+          )}
         </div>
         
         <div className="analysis-type">
@@ -119,7 +176,7 @@ function VideoProcessor({ onProcessed }) {
         <button
           type="submit"
           className="btn btn-primary processor-submit"
-          disabled={loading || !url}
+          disabled={loading || (inputType === 'url' && !url) || (inputType === 'file' && !file)}
         >
           {loading ? 'Processing...' : 'Analyze Video - Free →'}
         </button>

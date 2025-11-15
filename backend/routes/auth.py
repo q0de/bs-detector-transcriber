@@ -20,10 +20,21 @@ def signup():
         supabase = get_supabase_client()
         
         # Sign up user
-        response = supabase.auth.sign_up({
-            'email': email,
-            'password': password
-        })
+        try:
+            response = supabase.auth.sign_up({
+                'email': email,
+                'password': password,
+                'email_confirm': True  # Auto-confirm email for development/testing
+            })
+        except Exception as supabase_error:
+            error_msg = str(supabase_error)
+            print(f"Signup error: {error_msg}")  # Debug logging
+            # Check for common Supabase errors
+            if 'invalid' in error_msg.lower() and 'email' in error_msg.lower():
+                return jsonify({'success': False, 'error': f'Invalid email domain. Try gmail.com, yahoo.com, or outlook.com instead.'}), 400
+            if 'already registered' in error_msg.lower() or 'already exists' in error_msg.lower():
+                return jsonify({'success': False, 'error': 'Email already exists'}), 400
+            return jsonify({'success': False, 'error': f'Signup failed: {error_msg}'}), 400
         
         # Create user record in database
         if response.user:
@@ -103,9 +114,18 @@ def login():
             
     except Exception as e:
         error_msg = str(e)
-        if 'email not confirmed' in error_msg.lower():
-            return jsonify({'success': False, 'error': 'Please verify your email'}), 401
-        return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        print(f"Login error: {error_msg}")  # Debug logging
+        
+        # Check for specific Supabase errors
+        if 'email not confirmed' in error_msg.lower() or 'not confirmed' in error_msg.lower():
+            return jsonify({'success': False, 'error': 'Please verify your email before logging in'}), 401
+        if 'invalid login' in error_msg.lower() or 'invalid credentials' in error_msg.lower():
+            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        if 'user not found' in error_msg.lower():
+            return jsonify({'success': False, 'error': 'No account found with this email. Please sign up first.'}), 401
+        
+        # Return more detailed error for debugging
+        return jsonify({'success': False, 'error': f'Login failed: {error_msg}'}), 401
 
 @bp.route('/logout', methods=['POST'])
 def logout():

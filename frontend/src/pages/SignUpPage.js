@@ -49,7 +49,18 @@ function SignUpPage() {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Signup failed. Please try again.');
+      console.error('Signup error:', err);
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+        setError('Cannot connect to server. Please make sure the backend is running.');
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Signup failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

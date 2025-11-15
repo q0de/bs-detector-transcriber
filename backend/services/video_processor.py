@@ -36,30 +36,37 @@ class VideoProcessor:
             
             print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
             
-            # Get available transcripts
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            # Get list of available transcripts
+            api = YouTubeTranscriptApi()
+            transcript_list = api.list(video_id)
             
-            # Try to get English transcript first
-            try:
-                transcript = transcript_list.find_transcript(['en'])
-            except:
-                # If no English, get any available transcript
-                transcript = transcript_list.find_generated_transcript(['en', 'en-US', 'en-GB'])
+            # Find and fetch English transcript (or first available)
+            transcript = None
+            for t in transcript_list:
+                if t.language_code.startswith('en'):
+                    transcript = t
+                    break
             
-            # Fetch the transcript
-            transcript_data = transcript.fetch()
+            if not transcript and transcript_list:
+                transcript = transcript_list[0]
             
-            # Combine all text segments
-            full_text = ' '.join([entry['text'] for entry in transcript_data])
+            if not transcript:
+                print("⚠️ No transcripts available")
+                return None
+            
+            # Fetch the transcript data
+            fetched_transcript = transcript.fetch()
+            
+            # Get snippets and combine text
+            full_text = ' '.join([snippet.text for snippet in fetched_transcript.snippets])
             
             print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
             return full_text
             
-        except (TranscriptsDisabled, NoTranscriptFound) as e:
-            print(f"⚠️ No transcript available: {str(e)}")
-            return None
         except Exception as e:
             print(f"⚠️ Transcript fetch failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _get_whisper_module(self):
@@ -119,6 +126,13 @@ class VideoProcessor:
     def analyze_with_claude(self, transcription, analysis_type):
         """Analyze transcription with Claude"""
         try:
+            # Truncate if too long (Claude has ~200k token limit, but let's be safe)
+            # Roughly 4 chars = 1 token, so 50k chars = ~12.5k tokens
+            max_chars = 50000
+            if len(transcription) > max_chars:
+                print(f"⚠️ Transcript too long ({len(transcription)} chars), truncating to {max_chars}")
+                transcription = transcription[:max_chars] + "\n\n[Transcript truncated due to length...]"
+            
             if analysis_type == 'summarize':
                 prompt = f"""Please provide a comprehensive summary of the following video transcription. Include:
 1. Main topics discussed
@@ -141,18 +155,48 @@ Transcription:
             else:
                 prompt = f"Analyze the following transcription:\n\n{transcription}"
             
-            message = self.anthropic_client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
-            )
+            print(f"Sending {len(prompt)} characters to Claude...")
+            
+            # Try different models in order of preference
+            models_to_try = [
+                "claude-3-5-sonnet-20241022",  # Latest
+                "claude-3-opus-20240229",       # Claude 3 Opus
+                "claude-3-haiku-20240307",      # Claude 3 Haiku (fastest)
+                "claude-2.1",                    # Claude 2.1
+                "claude-instant-1.2"             # Claude Instant (fastest/cheapest)
+            ]
+            
+            message = None
+            last_error = None
+            
+            for model in models_to_try:
+                try:
+                    print(f"Trying model: {model}")
+                    message = self.anthropic_client.messages.create(
+                        model=model,
+                        max_tokens=4000,
+                        messages=[{
+                            "role": "user",
+                            "content": prompt
+                        }]
+                    )
+                    print(f"✅ Success with model: {model}")
+                    break
+                except Exception as e:
+                    last_error = e
+                    print(f"❌ Model {model} failed: {str(e)}")
+                    continue
+            
+            if not message:
+                raise Exception(f"All models failed. Last error: {str(last_error)}")
             
             analysis = message.content[0].text
+            print(f"✅ Received {len(analysis)} characters from Claude")
             return analysis
         except Exception as e:
+            print(f"❌ Claude API error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             raise Exception(f"Couldn't analyze with AI: {str(e)}")
     
     def process(self, video_url, analysis_type='summarize'):
