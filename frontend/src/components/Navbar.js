@@ -9,10 +9,27 @@ function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in (check localStorage first for immediate update)
     const checkUser = async () => {
+      const token = localStorage.getItem('access_token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (token && storedUser) {
+        // User is logged in - set immediately for fast UI update
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error('Failed to parse stored user:', e);
+        }
+      }
+      
+      // Also check with Supabase (this might be slower)
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      if (user) {
+        setUser(user);
+      } else if (!token) {
+        setUser(null);
+      }
     };
 
     checkUser();
