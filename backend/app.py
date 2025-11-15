@@ -39,6 +39,20 @@ def after_request(response):
         response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
+# Handle OPTIONS requests explicitly (for CORS preflight)
+@app.before_request
+def handle_preflight():
+    if request.method == 'OPTIONS':
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response = app.make_default_options_response()
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '3600'
+            return response
+
 # Import routes with error handling
 try:
     from routes import auth, videos, payments, users
