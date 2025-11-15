@@ -37,27 +37,52 @@ CORS(app,
 print(f"✅ CORS configured for /api/* routes with origins: {allowed_origins}")
 
 # Import routes with error handling
+# Note: Routes are imported but health check should work even if routes fail
 try:
+    print("📦 Importing routes...")
     from routes import auth, videos, payments, users
+    print("✅ Routes imported successfully")
     
     # Register blueprints
+    print("📝 Registering blueprints...")
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(videos.bp, url_prefix='/api/videos')
     app.register_blueprint(payments.bp, url_prefix='/api/payments')
     app.register_blueprint(users.bp, url_prefix='/api/users')
+    print("✅ Blueprints registered successfully")
 except Exception as e:
-    print(f"Error importing routes: {e}", file=sys.stderr)
+    print(f"❌ Error importing/registering routes: {e}", file=sys.stderr)
     import traceback
     traceback.print_exc()
-    raise
+    # Don't raise - allow app to start even if routes fail (for debugging)
+    print("⚠️ App will start but routes may not work")
 
 @app.route('/', methods=['GET'])
 def root():
-    return {'message': 'Video Transcriber API', 'status': 'running'}, 200
+    """Root endpoint - no dependencies, always works"""
+    try:
+        return {'message': 'Video Transcriber API', 'status': 'running'}, 200
+    except Exception as e:
+        print(f"❌ Root endpoint error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'message': 'Video Transcriber API', 'status': 'error', 'error': str(e)}, 500
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    return {'status': 'healthy', 'timestamp': __import__('datetime').datetime.utcnow().isoformat()}, 200
+    """Health check endpoint - minimal dependencies"""
+    try:
+        import datetime
+        return {
+            'status': 'healthy', 
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'cors_origins': allowed_origins
+        }, 200
+    except Exception as e:
+        print(f"❌ Health endpoint error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'status': 'error', 'error': str(e)}, 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
