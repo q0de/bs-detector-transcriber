@@ -1,11 +1,15 @@
 from flask import Blueprint, request, jsonify
 from middleware.auth_middleware import verify_token
 from services.supabase_client import get_supabase_client
-from services.video_processor import VideoProcessor
 from datetime import datetime
 import math
 
 bp = Blueprint('videos', __name__)
+
+def get_video_processor():
+    """Lazy import VideoProcessor to avoid startup crashes"""
+    from services.video_processor import VideoProcessor
+    return VideoProcessor()
 
 @bp.route('/process', methods=['POST'])
 @verify_token
@@ -32,8 +36,8 @@ def process_video():
         
         user = user_response.data[0]
         
-        # Initialize processor
-        processor = VideoProcessor()
+        # Initialize processor (lazy import)
+        processor = get_video_processor()
         
         # Estimate duration
         estimated_duration = processor.estimate_duration(video_url)
