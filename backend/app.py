@@ -7,7 +7,18 @@ import sys
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=[os.getenv('FRONTEND_URL', 'http://localhost:3000')])
+
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
+
+print("✅ CORS configured for all /api/* routes with origin http://localhost:3000")
 
 # Import routes with error handling
 try:
