@@ -143,15 +143,61 @@ class VideoProcessor:
 Transcription:
 {transcription}"""
             elif analysis_type == 'fact-check':
-                prompt = f"""Please fact-check the following video transcription. For each claim or statement:
-1. Identify factual claims
-2. Assess their accuracy (if possible)
-3. Note any unverifiable claims
-4. Highlight potential misinformation or bias
-5. Provide context where helpful
+                prompt = f"""Please fact-check the following video transcription and return your analysis as a JSON object.
 
-Transcription:
-{transcription}"""
+IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code blocks):
+
+{{
+  "fact_score": <number 0-10>,
+  "overall_verdict": "<string: 'Mostly Accurate' | 'Mixed Accuracy' | 'Mostly Inaccurate' | 'Unable to Verify'>",
+  "summary": "<brief 2-3 sentence overview>",
+  "verified_claims": [
+    {{
+      "timestamp": "<MM:SS or 'Throughout'>",
+      "claim": "<exact claim from video>",
+      "verdict": "VERIFIED",
+      "explanation": "<why this is verified>",
+      "sources": ["<source 1>", "<source 2>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "uncertain_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "UNCERTAIN",
+      "explanation": "<why uncertain>",
+      "sources": ["<source if any>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "false_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "FALSE",
+      "explanation": "<why this is false>",
+      "sources": ["<debunking source 1>", "<debunking source 2>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "bias_analysis": {{
+    "political_lean": <number -10 to 10, where -10=far left, 0=neutral, 10=far right>,
+    "political_lean_label": "<string>",
+    "emotional_tone": <number 0-10, where 0=neutral/factual, 10=highly emotional/sensational>,
+    "emotional_tone_label": "<string>",
+    "source_quality": <number 0-10, where 0=no sources, 10=peer-reviewed/authoritative>,
+    "source_quality_label": "<string>",
+    "overall_bias": "<Low | Moderate | High>"
+  }},
+  "red_flags": ["<any concerning patterns, logical fallacies, or manipulation tactics>"],
+  "full_transcript_with_highlights": "<transcript with [VERIFIED], [UNCERTAIN], [FALSE] tags inline>"
+}}
+
+Analyze this transcription:
+{transcription}
+
+Remember: Return ONLY the JSON object, no other text."""
             else:
                 prompt = f"Analyze the following transcription:\n\n{transcription}"
             
@@ -192,6 +238,28 @@ Transcription:
             
             analysis = message.content[0].text
             print(f"✅ Received {len(analysis)} characters from Claude")
+            
+            # For fact-check, try to parse as JSON
+            if analysis_type == 'fact-check':
+                try:
+                    import json
+                    import re
+                    
+                    # Claude might wrap JSON in markdown code blocks, so remove them
+                    cleaned = analysis.strip()
+                    if cleaned.startswith('```'):
+                        # Remove ```json or ``` at start and ``` at end
+                        cleaned = re.sub(r'^```(?:json)?\s*\n', '', cleaned)
+                        cleaned = re.sub(r'\n```\s*$', '', cleaned)
+                    
+                    parsed = json.loads(cleaned)
+                    print(f"✅ Successfully parsed JSON fact-check response")
+                    return parsed  # Return as dict/object, not string
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ Failed to parse JSON (will return raw text): {str(e)}")
+                    # Fall back to returning raw text
+                    return analysis
+            
             return analysis
         except Exception as e:
             print(f"❌ Claude API error: {str(e)}")

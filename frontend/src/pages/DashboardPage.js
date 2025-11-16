@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import VideoProcessor from '../components/VideoProcessor';
 import UsageIndicator from '../components/UsageIndicator';
+import FactCheckScore from '../components/FactCheckScore';
+import ClaimsList from '../components/ClaimsList';
+import BiasScale from '../components/BiasScale';
+import InteractiveTranscript from '../components/InteractiveTranscript';
 import { videoAPI } from '../services/api';
 import './DashboardPage.css';
 
@@ -50,33 +54,56 @@ function DashboardPage() {
               {videoResult.minutes_charged} minutes used • {videoResult.minutes_remaining} minutes remaining
             </div>
             
-            <div className="result-section">
-              <div className="result-header">
-                <h3>📄 TRANSCRIPTION</h3>
-                <div className="result-actions">
-                  <button onClick={() => navigator.clipboard.writeText(videoResult.transcription)}>
-                    Copy
-                  </button>
+            {/* Check if analysis is structured JSON (fact-check) */}
+            {typeof videoResult.analysis === 'object' && videoResult.analysis.fact_score !== undefined ? (
+              // Render enhanced fact-check components
+              <>
+                <FactCheckScore data={videoResult.analysis} />
+                <ClaimsList data={videoResult.analysis} />
+                <BiasScale data={videoResult.analysis} />
+                <InteractiveTranscript 
+                  transcript={videoResult.transcription}
+                  highlightedTranscript={videoResult.analysis.full_transcript_with_highlights}
+                />
+              </>
+            ) : (
+              // Render plain text format (summarize)
+              <>
+                <div className="result-section">
+                  <div className="result-header">
+                    <h3>📄 TRANSCRIPTION</h3>
+                    <div className="result-actions">
+                      <button onClick={() => navigator.clipboard.writeText(videoResult.transcription)}>
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="result-content">
+                    {videoResult.transcription}
+                  </div>
                 </div>
-              </div>
-              <div className="result-content">
-                {videoResult.transcription}
-              </div>
-            </div>
-            
-            <div className="result-section">
-              <div className="result-header">
-                <h3>📝 AI SUMMARY</h3>
-                <div className="result-actions">
-                  <button onClick={() => navigator.clipboard.writeText(videoResult.analysis)}>
-                    Copy
-                  </button>
+                
+                <div className="result-section">
+                  <div className="result-header">
+                    <h3>📝 AI ANALYSIS</h3>
+                    <div className="result-actions">
+                      <button onClick={() => navigator.clipboard.writeText(
+                        typeof videoResult.analysis === 'string' 
+                          ? videoResult.analysis 
+                          : JSON.stringify(videoResult.analysis, null, 2)
+                      )}>
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="result-content">
+                    {typeof videoResult.analysis === 'string' 
+                      ? videoResult.analysis 
+                      : JSON.stringify(videoResult.analysis, null, 2)}
+                  </div>
                 </div>
-              </div>
-              <div className="result-content">
-                {videoResult.analysis}
-              </div>
-            </div>
+              </>
+            )}
           </div>
         )}
         

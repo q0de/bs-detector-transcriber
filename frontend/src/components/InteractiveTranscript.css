@@ -1,0 +1,243 @@
+.interactive-transcript {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin: 24px 0;
+}
+
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.transcript-header h2 {
+  margin: 0;
+  font-size: 28px;
+  color: #2c3e50;
+}
+
+.transcript-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.control-btn {
+  padding: 10px 20px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  color: #666;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+.control-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.transcript-legend {
+  display: flex;
+  gap: 20px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+}
+
+.legend-badge {
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.legend-badge.verified {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.legend-badge.uncertain {
+  background: rgba(255, 152, 0, 0.15);
+}
+
+.legend-badge.false {
+  background: rgba(244, 67, 54, 0.15);
+}
+
+.transcript-content {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 12px;
+  max-height: 600px;
+  overflow-y: auto;
+  line-height: 1.8;
+}
+
+.transcript-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.transcript-content::-webkit-scrollbar-track {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+
+.transcript-content::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 4px;
+}
+
+.transcript-content::-webkit-scrollbar-thumb:hover {
+  background: #5568d3;
+}
+
+.transcript-paragraph {
+  margin-bottom: 16px;
+  color: #2c3e50;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.timestamp {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timestamp:hover {
+  background: #5568d3;
+  transform: scale(1.05);
+}
+
+.tag {
+  display: inline-block;
+  margin: 0 4px;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.tag-verified {
+  animation: pulse 2s infinite;
+}
+
+.tag-false {
+  animation: shake 0.5s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.highlight-verified {
+  background: rgba(76, 175, 80, 0.15);
+  padding: 2px 4px;
+  border-radius: 4px;
+  border-bottom: 2px solid #4CAF50;
+}
+
+.highlight-uncertain {
+  background: rgba(255, 152, 0, 0.15);
+  padding: 2px 4px;
+  border-radius: 4px;
+  border-bottom: 2px solid #FF9800;
+}
+
+.highlight-false {
+  background: rgba(244, 67, 54, 0.15);
+  padding: 2px 4px;
+  border-radius: 4px;
+  border-bottom: 2px solid #F44336;
+}
+
+.no-transcript {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .interactive-transcript {
+    padding: 16px;
+  }
+  
+  .transcript-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .transcript-controls {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .control-btn {
+    width: 100%;
+  }
+  
+  .transcript-legend {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .transcript-content {
+    padding: 16px;
+    font-size: 15px;
+  }
+}
+
