@@ -99,8 +99,11 @@ class VideoProcessor:
             raise Exception(f"Couldn't estimate duration: {str(e)}")
     
     def download_video(self, video_url, output_path):
-        """Download video using yt-dlp with anti-bot measures"""
+        """Download video using yt-dlp with anti-bot measures and optional proxy"""
         try:
+            # Get proxy from environment (optional, for videos without transcripts)
+            proxy_url = os.environ.get('PROXY_URL', None)
+            
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': output_path,
@@ -121,6 +124,13 @@ class VideoProcessor:
                     'Sec-Fetch-Mode': 'navigate',
                 },
             }
+            
+            # Add proxy if configured (helps bypass datacenter IP blocking)
+            if proxy_url:
+                print(f"🌐 Using residential proxy for download...")
+                ydl_opts['proxy'] = proxy_url
+            else:
+                print(f"⚠️ No proxy configured - datacenter IPs may be blocked by YouTube")
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=True)
