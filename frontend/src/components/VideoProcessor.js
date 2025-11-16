@@ -58,7 +58,9 @@ function VideoProcessor({ onProcessed }) {
     setError('');
 
     try {
-      const response = await videoAPI.process(url, analysisType);
+      // Trim whitespace from URL
+      const cleanUrl = url.trim();
+      const response = await videoAPI.process(cleanUrl, analysisType);
       
       // Call callback if provided
       if (onProcessed) {
