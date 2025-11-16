@@ -357,6 +357,7 @@ Remember: Return ONLY the JSON object, no other text."""
         # Initialize metadata with defaults (we'll try to get real metadata later)
         title = 'Untitled'
         duration_minutes = 0
+        creator_info = None  # Will be populated from video metadata
         
         transcription = None
         language = 'en'
@@ -444,6 +445,14 @@ Remember: Return ONLY the JSON object, no other text."""
                     duration = info.get('duration', 0)
                     if duration > 0:
                         duration_minutes = duration / 60
+                    
+                    # Extract creator information for tracking
+                    creator_info = {
+                        'name': info.get('uploader') or info.get('channel'),
+                        'platform_id': info.get('channel_id') or info.get('uploader_id'),
+                        'channel_url': info.get('channel_url') or info.get('uploader_url'),
+                        'subscriber_count': info.get('channel_follower_count')
+                    }
                 print(f"✅ Metadata fetched: {title} ({duration_minutes:.1f} min)")
             except Exception as e:
                 print(f"⚠️ Couldn't get video metadata (not critical, continuing...): {str(e)}")
@@ -466,6 +475,7 @@ Remember: Return ONLY the JSON object, no other text."""
             'duration_minutes': duration_minutes,
             'transcription': transcription,
             'analysis': analysis,
+            'creator_info': creator_info,
             'language': language
         }
 

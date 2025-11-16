@@ -139,6 +139,64 @@ def process_video():
             print("📥 No cached transcript - fetching new transcript and analyzing...")
             result = processor.process(video_url, analysis_type)
         
+        # Track creator (if metadata was successfully extracted)
+        creator_id = None
+        creator_data = None
+        if result.get('creator_info') and result['creator_info'].get('name'):
+            try:
+                print("👤 Tracking creator...")
+                creator_info = result['creator_info']
+                
+                # Upsert creator using database function
+                creator_response = supabase.rpc('upsert_creator', {
+                    'p_name': creator_info['name'],
+                    'p_platform_id': creator_info['platform_id'] or 'unknown',
+                    'p_platform': result.get('platform', 'youtube'),
+                    'p_channel_url': creator_info.get('channel_url'),
+                    'p_subscriber_count': creator_info.get('subscriber_count')
+                }).execute()
+                
+                if creator_response.data:
+                    creator_id = creator_response.data
+                    print(f"✅ Creator tracked: {creator_info['name']} (ID: {creator_id})")
+                    
+                    # Track video upload globally
+                    supabase.rpc('track_video_upload', {
+                        'p_video_url': video_url,
+                        'p_creator_id': creator_id
+                    }).execute()
+                    
+                    # If this is a fact-check, update creator stats
+                    if analysis_type == 'fact-check' and creator_id:
+                        # Extract fact_score from analysis
+                        fact_score = None
+                        if isinstance(result['analysis'], dict):
+                            fact_score = result['analysis'].get('fact_score')
+                        elif isinstance(result['analysis'], str):
+                            # Try to parse JSON from string
+                            try:
+                                import json
+                                analysis_obj = json.loads(result['analysis'])
+                                fact_score = analysis_obj.get('fact_score')
+                            except:
+                                pass
+                        
+                        if fact_score is not None:
+                            print(f"📊 Updating creator stats with score: {fact_score}")
+                            supabase.rpc('update_creator_stats', {
+                                'p_creator_id': creator_id,
+                                'p_new_fact_score': float(fact_score)
+                            }).execute()
+                            
+                            # Fetch updated creator data for response
+                            creator_query = supabase.table('creators').select('*').eq('id', creator_id).execute()
+                            if creator_query.data:
+                                creator_data = creator_query.data[0]
+                                print(f"✅ Creator stats updated: {creator_data['total_videos_analyzed']} videos, avg score: {creator_data['avg_fact_score']}")
+            except Exception as e:
+                print(f"⚠️ Creator tracking failed (non-critical): {str(e)}")
+                # Continue processing even if creator tracking fails
+        
         # Calculate actual minutes charged (round up)
         actual_minutes = math.ceil(result['duration_minutes'])
         
@@ -154,7 +212,10 @@ def process_video():
             'analysis_type': analysis_type,
             'processing_status': 'completed',
             'minutes_charged': actual_minutes,
-            'completed_at': datetime.utcnow().isoformat()
+            'completed_at': datetime.utcnow().isoformat(),
+            'creator_id': creator_id,
+            'creator_name': result.get('creator_info', {}).get('name') if result.get('creator_info') else None,
+            'creator_platform_id': result.get('creator_info', {}).get('platform_id') if result.get('creator_info') else None
         }
         
         video_response = supabase.table('videos').insert(video_data).execute()
@@ -176,7 +237,7 @@ def process_video():
         
         remaining = max(0, limit - new_used)
         
-        return jsonify({
+        response_data = {
             'success': True,
             'video_id': video_id,
             'video_url': video_url,
@@ -187,7 +248,18 @@ def process_video():
             'transcription': result['transcription'],
             'analysis': result['analysis'],
             'minutes_remaining': remaining
-        }), 200
+        }
+        
+        # Add creator data if available (only if 10+ videos analyzed)
+        if creator_data and creator_data.get('total_videos_analyzed', 0) >= 10:
+            response_data['creator'] = {
+                'name': creator_data['name'],
+                'total_videos': creator_data['total_videos_analyzed'],
+                'avg_score': float(creator_data['avg_fact_score']) if creator_data.get('avg_fact_score') else None,
+                'last_score': float(creator_data['last_fact_score']) if creator_data.get('last_fact_score') else None
+            }
+        
+        return jsonify(response_data), 200
         
     except Exception as e:
         error_msg = str(e)
