@@ -3,24 +3,22 @@
   margin: 0 auto;
 }
 
-.processor-form {
-  background: var(--bg-white);
-  padding: 0;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e0e0e0;
-  overflow: hidden;
-  position: relative;
-  margin-top: -2px;
-}
-
 .input-tabs {
   display: flex;
   gap: 4px;
   margin-bottom: 0;
   position: relative;
   z-index: 1;
-  background: transparent;
+}
+
+.processor-form {
+  background: var(--bg-white);
+  padding: 0;
+  border-radius: 0 12px 12px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+  overflow: hidden;
+  position: relative;
 }
 
 .tab {
@@ -47,22 +45,12 @@
 .tab.active {
   background: white;
   border-color: #e0e0e0;
-  border-bottom: 2px solid white;
+  border-bottom: none;
   color: #667eea;
   z-index: 10;
-  box-shadow: none;
-}
-
-/* Smooth connection between active tab and form - covers the form's top border */
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: -2px;
-  right: -2px;
-  height: 4px;
-  background: white;
-  z-index: 11;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: -2px;
+  padding-bottom: 16px;
 }
 
 .form-content {
