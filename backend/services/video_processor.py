@@ -99,13 +99,27 @@ class VideoProcessor:
             raise Exception(f"Couldn't estimate duration: {str(e)}")
     
     def download_video(self, video_url, output_path):
-        """Download video using yt-dlp"""
+        """Download video using yt-dlp with anti-bot measures"""
         try:
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': output_path,
                 'quiet': True,
                 'no_warnings': True,
+                # Anti-bot detection measures
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'web'],  # Use mobile client
+                        'player_skip': ['webpage', 'configs'],  # Skip some checks
+                    }
+                },
+                # Rotate user agents
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-us,en;q=0.5',
+                    'Sec-Fetch-Mode': 'navigate',
+                },
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -293,6 +307,7 @@ Remember: Return ONLY the JSON object, no other text."""
         # If no transcript available, download and transcribe
         if not transcription:
             print("📥 Downloading and transcribing video with Whisper...")
+            print("⚠️ Note: Some videos may be blocked due to bot detection on server IPs")
             temp_dir = tempfile.mkdtemp()
             audio_path = os.path.join(temp_dir, 'audio.%(ext)s')
             
