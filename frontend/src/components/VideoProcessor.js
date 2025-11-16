@@ -153,8 +153,9 @@ function VideoProcessor({ onProcessed }) {
           </button>
         </div>
         
-        <div className="input-group">
-          {inputType === 'url' ? (
+        <div className="form-content">
+          <div className="input-group">
+            {inputType === 'url' ? (
             <input
               type="text"
               placeholder="Paste your YouTube or Instagram URL..."
@@ -268,13 +269,14 @@ function VideoProcessor({ onProcessed }) {
           </div>
         )}
         
-        <button
-          type="submit"
-          className="btn btn-primary processor-submit"
-          disabled={loading || (inputType === 'url' && !url) || (inputType === 'file' && !file)}
-        >
-          {loading ? 'Processing...' : 'Analyze Video - Free →'}
-        </button>
+          <button
+            type="submit"
+            className="btn btn-primary processor-submit"
+            disabled={loading || (inputType === 'url' && !url) || (inputType === 'file' && !file)}
+          >
+            {loading ? 'Processing...' : 'Analyze Video - Free →'}
+          </button>
+        </div>
       </form>
     </div>
   );

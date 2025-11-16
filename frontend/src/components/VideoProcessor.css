@@ -5,32 +5,64 @@
 
 .processor-form {
   background: var(--bg-white);
-  padding: 32px;
-  border-radius: 12px;
+  padding: 0;
+  border-radius: 0 12px 12px 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+  overflow: hidden;
 }
 
 .input-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 4px;
+  margin-bottom: -2px; /* Pull tabs down to overlap form border */
+  position: relative;
+  z-index: 1;
 }
 
 .tab {
-  padding: 8px 16px;
-  border: 2px solid var(--border-light);
-  background: var(--bg-light);
-  border-radius: 8px 8px 0 0;
+  padding: 12px 24px;
+  border: 2px solid #e0e0e0;
+  background: #f1f3f5;
+  border-radius: 12px 12px 0 0;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  color: #666;
+  border-bottom: none;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab:hover:not(.active) {
+  background: #e9ecef;
+  transform: translateY(-2px);
 }
 
 .tab.active {
   background: var(--bg-white);
-  border-bottom-color: var(--bg-white);
-  border-color: var(--primary-blue);
-  color: var(--primary-blue);
+  border-color: #667eea;
+  border-bottom: 2px solid var(--bg-white);
+  color: #667eea;
+  transform: translateY(-4px);
+  box-shadow: 0 -4px 8px rgba(102, 126, 234, 0.15);
+  z-index: 2;
+}
+
+/* Add connector line to make active tab blend with form */
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: var(--bg-white);
+}
+
+.form-content {
+  padding: 32px;
 }
 
 .input-group {
