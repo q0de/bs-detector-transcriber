@@ -28,6 +28,7 @@ function CreatorBadge({ creator }) {
           <h4 className="creator-name">{creator.name}</h4>
           <p className="creator-stats">
             {creator.total_videos} video{creator.total_videos !== 1 ? 's' : ''} analyzed
+            {creator.category && <span className="creator-category"> • {creator.category}</span>}
           </p>
         </div>
       </div>

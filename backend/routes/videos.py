@@ -153,7 +153,8 @@ def process_video():
                     'p_platform_id': creator_info['platform_id'] or 'unknown',
                     'p_platform': result.get('platform', 'youtube'),
                     'p_channel_url': creator_info.get('channel_url'),
-                    'p_subscriber_count': creator_info.get('subscriber_count')
+                    'p_subscriber_count': creator_info.get('subscriber_count'),
+                    'p_category': creator_info.get('category')
                 }).execute()
                 
                 if creator_response.data:
@@ -215,7 +216,8 @@ def process_video():
             'completed_at': datetime.utcnow().isoformat(),
             'creator_id': creator_id,
             'creator_name': result.get('creator_info', {}).get('name') if result.get('creator_info') else None,
-            'creator_platform_id': result.get('creator_info', {}).get('platform_id') if result.get('creator_info') else None
+            'creator_platform_id': result.get('creator_info', {}).get('platform_id') if result.get('creator_info') else None,
+            'category': result.get('creator_info', {}).get('category') if result.get('creator_info') else None
         }
         
         video_response = supabase.table('videos').insert(video_data).execute()
@@ -256,7 +258,8 @@ def process_video():
                 'name': creator_data['name'],
                 'total_videos': creator_data['total_videos_analyzed'],
                 'avg_score': float(creator_data['avg_fact_score']) if creator_data.get('avg_fact_score') else None,
-                'last_score': float(creator_data['last_fact_score']) if creator_data.get('last_fact_score') else None
+                'last_score': float(creator_data['last_fact_score']) if creator_data.get('last_fact_score') else None,
+                'category': creator_data.get('category')
             }
         
         return jsonify(response_data), 200

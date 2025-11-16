@@ -450,11 +450,16 @@ Remember: Return ONLY the JSON object, no other text."""
                         duration_minutes = duration / 60
                     
                     # Extract creator information for tracking
+                    # YouTube categories: News & Politics, Education, Entertainment, Science & Technology, etc.
+                    categories = info.get('categories', [])
+                    category = categories[0] if categories else info.get('category', 'Unknown')
+                    
                     creator_info = {
                         'name': info.get('uploader') or info.get('channel'),
                         'platform_id': info.get('channel_id') or info.get('uploader_id'),
                         'channel_url': info.get('channel_url') or info.get('uploader_url'),
-                        'subscriber_count': info.get('channel_follower_count')
+                        'subscriber_count': info.get('channel_follower_count'),
+                        'category': category
                     }
                 print(f"✅ Metadata fetched: {title} ({duration_minutes:.1f} min)")
             except Exception as e:
