@@ -274,15 +274,17 @@ Remember: Return ONLY the JSON object, no other text."""
             for model in models_to_try:
                 try:
                     print(f"Trying model: {model}")
+                    # Use more tokens for fact-check (needs full highlighted transcript)
+                    max_tokens = 8000 if analysis_type == 'fact-check' else 4000
                     message = self.anthropic_client.messages.create(
                         model=model,
-                        max_tokens=4000,
+                        max_tokens=max_tokens,
                         messages=[{
                             "role": "user",
                             "content": prompt
                         }]
                     )
-                    print(f"✅ Success with model: {model}")
+                    print(f"✅ Success with model: {model} (max_tokens: {max_tokens})")
                     break
                 except Exception as e:
                     last_error = e
