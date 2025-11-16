@@ -14,39 +14,20 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Form submitted! Check console...'); // Very visible debug
     setError('');
     setLoading(true);
 
     try {
-      console.log('=== LOGIN ATTEMPT ===');
-      console.log('Email:', email);
-      console.log('Calling authAPI.login...');
-      
       const response = await authAPI.login(email, password);
-      
-      console.log('=== LOGIN SUCCESS ===');
-      console.log('Full response:', response);
-      console.log('Access token:', response.data?.session?.access_token);
       
       // Store token
       localStorage.setItem('access_token', response.data.session.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      alert('Login successful! Redirecting to dashboard...'); // Very visible
-      
       // Navigate to dashboard
       navigate('/dashboard');
-      
-      console.log('=== NAVIGATION CALLED ===');
     } catch (err) {
-      console.error('=== LOGIN ERROR ===');
-      console.error('Error object:', err);
-      console.error('Error response:', err.response);
-      console.error('Error message:', err.message);
-      
-      alert('Login failed! Check console for details.'); // Very visible
-      
+      console.error('Login failed:', err.message);
       setError(err.response?.data?.error || err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

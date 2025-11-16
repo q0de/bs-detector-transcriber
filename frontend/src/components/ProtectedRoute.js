@@ -9,16 +9,12 @@ function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('=== PROTECTED ROUTE: Checking auth ===');
         const token = localStorage.getItem('access_token');
-        console.log('Token exists:', !!token);
         
         // If we have a token in localStorage, we're authenticated
         if (token) {
-          console.log('✅ User is authenticated');
           setAuthenticated(true);
         } else {
-          console.log('❌ No token found');
           setAuthenticated(false);
         }
       } catch (error) {
@@ -32,20 +28,12 @@ function ProtectedRoute({ children }) {
     checkAuth();
   }, []);
 
-  console.log('ProtectedRoute state - loading:', loading, 'authenticated:', authenticated);
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <div className="spinner"></div>
       </div>
     );
-  }
-
-  if (!authenticated) {
-    console.log('=== REDIRECTING TO LOGIN (not authenticated) ===');
-  } else {
-    console.log('=== SHOWING PROTECTED CONTENT ===');
   }
 
   return authenticated ? children : <Navigate to="/login" replace />;
