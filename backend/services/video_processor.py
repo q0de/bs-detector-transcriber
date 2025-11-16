@@ -217,12 +217,22 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
       "confidence": "<High | Medium | Low>"
     }}
   ],
+  "opinion_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "OPINION",
+      "explanation": "<why this is subjective/speculative>",
+      "sources": ["<relevant context if any>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
   "uncertain_claims": [
     {{
       "timestamp": "<MM:SS>",
       "claim": "<exact claim>",
       "verdict": "UNCERTAIN",
-      "explanation": "<why uncertain>",
+      "explanation": "<why uncertain - lack of evidence but not disproven>",
       "sources": ["<source if any>"],
       "confidence": "<High | Medium | Low>"
     }}
@@ -247,8 +257,21 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
     "overall_bias": "<Low | Moderate | High>"
   }},
   "red_flags": ["<any concerning patterns, logical fallacies, or manipulation tactics>"],
-  "full_transcript_with_highlights": "<transcript with [VERIFIED], [UNCERTAIN], [FALSE] tags inline>"
+  "full_transcript_with_highlights": "<transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inline>"
 }}
+
+CLAIM CATEGORIES:
+- VERIFIED: Factual claims backed by reliable sources
+- OPINION: Subjective judgments, predictions, speculations, or interpretations (e.g., "I think", "will be", "worst ever", personal beliefs)
+- UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
+- FALSE: Claims that are demonstrably incorrect or misleading
+
+FACT SCORE GUIDANCE:
+- Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
+- OPINION claims should NOT significantly lower the score (they're subjective, not false)
+- UNCERTAIN claims should have minor impact (lack of evidence, not misinformation)
+- A video with many opinions but accurate facts should still score 7-9
+- Only penalize heavily for demonstrably FALSE claims
 
 Analyze this transcription:
 {transcription}

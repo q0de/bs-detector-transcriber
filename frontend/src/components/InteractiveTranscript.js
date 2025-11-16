@@ -17,13 +17,16 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
     if (!showHighlights || !text) return text;
     
     // Split by tags and add appropriate spans
-    const parts = text.split(/(\[VERIFIED\]|\[UNCERTAIN\]|\[FALSE\])/g);
+    const parts = text.split(/(\[VERIFIED\]|\[OPINION\]|\[UNCERTAIN\]|\[FALSE\])/g);
     let currentClass = '';
     
     return parts.map((part, index) => {
       if (part === '[VERIFIED]') {
         currentClass = 'highlight-verified';
         return <span key={index} className="tag tag-verified">✅</span>;
+      } else if (part === '[OPINION]') {
+        currentClass = 'highlight-opinion';
+        return <span key={index} className="tag tag-opinion">🔮</span>;
       } else if (part === '[UNCERTAIN]') {
         currentClass = 'highlight-uncertain';
         return <span key={index} className="tag tag-uncertain">⚠️</span>;
@@ -69,6 +72,9 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
         <div className="transcript-legend">
           <span className="legend-item">
             <span className="legend-badge verified">✅</span> Verified
+          </span>
+          <span className="legend-item">
+            <span className="legend-badge opinion">🔮</span> Opinion
           </span>
           <span className="legend-item">
             <span className="legend-badge uncertain">⚠️</span> Uncertain

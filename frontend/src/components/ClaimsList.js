@@ -10,6 +10,11 @@ function ClaimItem({ claim, index, type }) {
       color: 'green',
       label: 'VERIFIED'
     },
+    opinion: {
+      icon: '🔮',
+      color: 'purple',
+      label: 'OPINION'
+    },
     uncertain: {
       icon: '⚠️',
       color: 'orange',
@@ -84,11 +89,13 @@ function ClaimsList({ data }) {
   if (!data) return null;
   
   const verifiedClaims = data.verified_claims || [];
+  const opinionClaims = data.opinion_claims || [];
   const uncertainClaims = data.uncertain_claims || [];
   const falseClaims = data.false_claims || [];
   
   const allClaims = [
     ...verifiedClaims.map(c => ({ ...c, type: 'verified' })),
+    ...opinionClaims.map(c => ({ ...c, type: 'opinion' })),
     ...uncertainClaims.map(c => ({ ...c, type: 'uncertain' })),
     ...falseClaims.map(c => ({ ...c, type: 'false' }))
   ];
@@ -123,6 +130,12 @@ function ClaimsList({ data }) {
             onClick={() => setFilter('verified')}
           >
             ✅ Verified ({verifiedClaims.length})
+          </button>
+          <button 
+            className={filter === 'opinion' ? 'active' : ''} 
+            onClick={() => setFilter('opinion')}
+          >
+            🔮 Opinion ({opinionClaims.length})
           </button>
           <button 
             className={filter === 'uncertain' ? 'active' : ''} 

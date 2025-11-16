@@ -62,6 +62,10 @@
   border-left-color: #4CAF50;
 }
 
+.claim-item.purple {
+  border-left-color: #8b5cf6;
+}
+
 .claim-item.orange {
   border-left-color: #FF9800;
 }
@@ -119,6 +123,11 @@
 .claim-verdict.green {
   background: rgba(76, 175, 80, 0.15);
   color: #2E7D32;
+}
+
+.claim-verdict.purple {
+  background: rgba(139, 92, 246, 0.15);
+  color: #6d28d9;
 }
 
 .claim-verdict.orange {

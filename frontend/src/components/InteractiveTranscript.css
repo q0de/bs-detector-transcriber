@@ -85,6 +85,10 @@
   background: rgba(76, 175, 80, 0.15);
 }
 
+.legend-badge.opinion {
+  background: rgba(139, 92, 246, 0.15);
+}
+
 .legend-badge.uncertain {
   background: rgba(255, 152, 0, 0.15);
 }
@@ -187,6 +191,13 @@
   padding: 2px 4px;
   border-radius: 4px;
   border-bottom: 2px solid #4CAF50;
+}
+
+.highlight-opinion {
+  background: rgba(139, 92, 246, 0.15);
+  padding: 2px 4px;
+  border-radius: 4px;
+  border-bottom: 2px dotted #8b5cf6;
 }
 
 .highlight-uncertain {
