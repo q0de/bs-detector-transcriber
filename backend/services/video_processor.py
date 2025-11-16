@@ -273,23 +273,14 @@ Remember: Return ONLY the JSON object, no other text."""
         is_youtube = 'youtube.com' in video_url or 'youtu.be' in video_url
         platform = 'youtube' if is_youtube else 'instagram'
         
-        # Get video metadata first
-        try:
-            ydl_opts = {'quiet': True, 'no_warnings': True}
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
-                title = info.get('title', 'Untitled')
-                duration = info.get('duration', 0)
-                duration_minutes = duration / 60
-        except Exception as e:
-            print(f"⚠️ Couldn't get video metadata: {str(e)}")
-            title = 'Untitled'
-            duration_minutes = 0
+        # Initialize metadata with defaults (we'll try to get real metadata later)
+        title = 'Untitled'
+        duration_minutes = 0
         
         transcription = None
         language = 'en'
         
-        # Try YouTube transcript first (fastest method)
+        # Try YouTube transcript first (fastest method, works even if yt-dlp is blocked)
         if is_youtube:
             print("🎯 Attempting to use YouTube transcript (faster)...")
             transcription = self.get_youtube_transcript(video_url)
@@ -331,6 +322,32 @@ Remember: Return ONLY the JSON object, no other text."""
                     shutil.rmtree(temp_dir)
                 except:
                     pass
+        
+        # Try to get video metadata (non-blocking, best effort)
+        if title == 'Untitled':
+            try:
+                print("📊 Attempting to fetch video metadata...")
+                ydl_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'extract_flat': True  # Faster, less intrusive
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(video_url, download=False)
+                    title = info.get('title', 'Untitled')
+                    duration = info.get('duration', 0)
+                    if duration > 0:
+                        duration_minutes = duration / 60
+                print(f"✅ Metadata fetched: {title} ({duration_minutes:.1f} min)")
+            except Exception as e:
+                print(f"⚠️ Couldn't get video metadata (not critical, continuing...): {str(e)}")
+                # Use video ID as fallback title
+                if is_youtube:
+                    try:
+                        video_id = video_url.split('v=')[-1].split('&')[0] if 'v=' in video_url else video_url.split('/')[-1].split('?')[0]
+                        title = f"YouTube Video {video_id}"
+                    except:
+                        title = 'YouTube Video'
         
         # Analyze with Claude
         print("🤖 Analyzing with Claude AI...")
