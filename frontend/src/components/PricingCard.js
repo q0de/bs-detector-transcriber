@@ -4,6 +4,7 @@ import './PricingCard.css';
 function PricingCard({ plan, billingPeriod, onSubscribe }) {
   const price = billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
   const costPerMinute = price > 0 ? (price / plan.minutes).toFixed(3) : 0;
+  const effectiveMonthlyPrice = billingPeriod === 'yearly' && price > 0 ? (price / 12).toFixed(2) : null;
 
   return (
     <div className={`pricing-card ${plan.popular ? 'popular' : ''}`}>
@@ -16,8 +17,8 @@ function PricingCard({ plan, billingPeriod, onSubscribe }) {
           ${price}
           <span className="period">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
         </div>
-        {billingPeriod === 'yearly' && price > 0 && plan.savings && (
-          <div className="savings-badge">Save ${plan.savings}/yr</div>
+        {effectiveMonthlyPrice && (
+          <div className="savings-badge">${effectiveMonthlyPrice}/mo</div>
         )}
       </div>
       
