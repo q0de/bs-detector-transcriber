@@ -183,29 +183,34 @@ function VideoProcessor({ onProcessed }) {
           )}
         </div>
         
-        <div className="analysis-type">
-          <label>
-            <input
-              type="radio"
-              name="analysisType"
-              value="summarize"
-              checked={analysisType === 'summarize'}
-              onChange={(e) => setAnalysisType(e.target.value)}
+        <div className="analysis-type-selector">
+          <div className="selector-label">Analysis Type:</div>
+          <div className="segmented-control">
+            <button
+              type="button"
+              className={`segment ${analysisType === 'summarize' ? 'active' : ''}`}
+              onClick={() => setAnalysisType('summarize')}
               disabled={loading}
-            />
-            Summarize
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="analysisType"
-              value="fact-check"
-              checked={analysisType === 'fact-check'}
-              onChange={(e) => setAnalysisType(e.target.value)}
+            >
+              <span className="segment-icon">📝</span>
+              <span className="segment-text">
+                <strong>Summarize</strong>
+                <small>Quick overview</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`segment ${analysisType === 'fact-check' ? 'active' : ''}`}
+              onClick={() => setAnalysisType('fact-check')}
               disabled={loading}
-            />
-            Fact Check (BS Detector)
-          </label>
+            >
+              <span className="segment-icon">🔍</span>
+              <span className="segment-text">
+                <strong>Fact Check</strong>
+                <small>Full BS detection</small>
+              </span>
+            </button>
+          </div>
         </div>
         
         {estimatedMinutes && (

@@ -30,6 +30,9 @@
 .logo-icon {
   font-size: 28px;
   filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
+  /* Prevent gradient from affecting emoji */
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
 }
 
 .navbar-links {
