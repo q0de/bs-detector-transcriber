@@ -282,36 +282,39 @@ Remember: Return ONLY the JSON object, no other text."""
             
             print(f"Sending {len(prompt)} characters to Claude...")
             
-            # Try different models in order of preference
+            # Try different models in order of preference with their max_tokens limits
             models_to_try = [
-                "claude-3-5-sonnet-20241022",  # Latest
-                "claude-3-opus-20240229",       # Claude 3 Opus
-                "claude-3-haiku-20240307",      # Claude 3 Haiku (fastest)
-                "claude-2.1",                    # Claude 2.1
-                "claude-instant-1.2"             # Claude Instant (fastest/cheapest)
+                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (stable)
+                ("claude-3-opus-20240229", 8000),       # Claude 3 Opus
+                ("claude-3-sonnet-20240229", 8000),     # Claude 3 Sonnet
+                ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (4K limit)
             ]
             
             message = None
             last_error = None
             
-            for model in models_to_try:
+            for model_name, model_max_tokens in models_to_try:
                 try:
-                    print(f"Trying model: {model}")
-                    # Use more tokens for fact-check (needs full highlighted transcript)
-                    max_tokens = 8000 if analysis_type == 'fact-check' else 4000
+                    print(f"Trying model: {model_name}")
+                    # Use model-specific max_tokens, but respect fact-check needs
+                    if analysis_type == 'fact-check':
+                        max_tokens = min(8000, model_max_tokens)
+                    else:
+                        max_tokens = min(4000, model_max_tokens)
+                    
                     message = self.anthropic_client.messages.create(
-                        model=model,
+                        model=model_name,
                         max_tokens=max_tokens,
                         messages=[{
                             "role": "user",
                             "content": prompt
                         }]
                     )
-                    print(f"✅ Success with model: {model} (max_tokens: {max_tokens})")
+                    print(f"✅ Success with model: {model_name} (max_tokens: {max_tokens})")
                     break
                 except Exception as e:
                     last_error = e
-                    print(f"❌ Model {model} failed: {str(e)}")
+                    print(f"❌ Model {model_name} failed: {str(e)}")
                     continue
             
             if not message:
