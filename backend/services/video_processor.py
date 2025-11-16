@@ -36,23 +36,40 @@ class VideoProcessor:
             
             print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
             
-            # Try to get transcript (prioritize English)
+            # Use the API for version 1.2.3 - create instance and use list() method
             try:
-                # Try English first
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            except:
-                try:
-                    # Try any available language
-                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-                except:
-                    print("⚠️ No transcripts available")
+                api = YouTubeTranscriptApi()
+                transcript_list = api.list(video_id)
+                
+                # Try to find English transcript
+                transcript = None
+                for t in transcript_list:
+                    if hasattr(t, 'language_code') and t.language_code.startswith('en'):
+                        transcript = t
+                        break
+                
+                # If no English found, use first available
+                if not transcript and transcript_list:
+                    transcript = transcript_list[0]
+                
+                if not transcript:
+                    print("⚠️ No transcripts found")
                     return None
-            
-            # Combine all text segments
-            full_text = ' '.join([entry['text'] for entry in transcript_list])
-            
-            print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
-            return full_text
+                
+                # Fetch the actual transcript data
+                fetched = transcript.fetch()
+                
+                # Combine all text segments
+                full_text = ' '.join([snippet.text for snippet in fetched.snippets])
+                
+                print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
+                return full_text
+                
+            except Exception as e:
+                print(f"⚠️ No transcripts available: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return None
             
         except Exception as e:
             print(f"⚠️ Transcript fetch failed: {str(e)}")
