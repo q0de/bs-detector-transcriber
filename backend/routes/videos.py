@@ -74,15 +74,38 @@ def process_video():
             traceback.print_exc()
             return jsonify({'success': False, 'error': f'Video processor initialization failed: {str(proc_error)}'}), 500
         
-        # Estimate duration (skip if we have existing metadata)
-        if not existing_transcript:
-            print("⏱️ Estimating video duration...")
-            estimated_duration = processor.estimate_duration(video_url)
-            print(f"✅ Estimated duration: {estimated_duration}s ({estimated_duration/60:.1f} min)")
-        else:
-            estimated_duration = video_metadata['duration_minutes'] * 60
-            print(f"✅ Using cached duration: {estimated_duration}s ({estimated_duration/60:.1f} min)")
-        estimated_minutes = math.ceil(estimated_duration / 60)
+        # Try to get YouTube transcript first (works without proxy, fast!)
+        estimated_minutes = 15  # Default estimate
+        has_transcript = False
+        
+        if not existing_transcript and ('youtube.com' in video_url or 'youtu.be' in video_url):
+            print("🎯 Checking for YouTube transcript (no proxy needed)...")
+            test_transcript = processor.get_youtube_transcript(video_url)
+            if test_transcript:
+                print(f"✅ Found YouTube transcript! Estimating from transcript length...")
+                # Estimate: ~150 words per minute speaking rate
+                word_count = len(test_transcript.split())
+                estimated_minutes = math.ceil(word_count / 150)
+                has_transcript = True
+                print(f"📊 Estimated {estimated_minutes} minutes based on transcript ({word_count} words)")
+            else:
+                print("⚠️ No YouTube transcript - will need to download video")
+        
+        # Only estimate duration with yt-dlp if we couldn't get transcript
+        if not has_transcript and not existing_transcript:
+            try:
+                print("⏱️ Estimating video duration with yt-dlp...")
+                estimated_duration = processor.estimate_duration(video_url)
+                print(f"✅ Estimated duration: {estimated_duration}s ({estimated_duration/60:.1f} min)")
+                estimated_minutes = math.ceil(estimated_duration / 60)
+            except Exception as est_error:
+                print(f"⚠️ Duration estimation failed (not critical): {str(est_error)}")
+                print("   Will use default estimate of 15 minutes")
+                estimated_minutes = 15
+        elif existing_transcript:
+            estimated_minutes = math.ceil(video_metadata['duration_minutes'])
+            print(f"✅ Using cached duration: {estimated_minutes} minutes")
+        
         print(f"📊 Will charge {estimated_minutes} minutes for this video")
         
         # Check limit

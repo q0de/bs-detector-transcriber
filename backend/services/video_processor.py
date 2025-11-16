@@ -36,29 +36,20 @@ class VideoProcessor:
             
             print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
             
-            # Get list of available transcripts
-            api = YouTubeTranscriptApi()
-            transcript_list = api.list(video_id)
+            # Try to get transcript (prioritize English)
+            try:
+                # Try English first
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            except:
+                try:
+                    # Try any available language
+                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+                except:
+                    print("⚠️ No transcripts available")
+                    return None
             
-            # Find and fetch English transcript (or first available)
-            transcript = None
-            for t in transcript_list:
-                if t.language_code.startswith('en'):
-                    transcript = t
-                    break
-            
-            if not transcript and transcript_list:
-                transcript = transcript_list[0]
-            
-            if not transcript:
-                print("⚠️ No transcripts available")
-                return None
-            
-            # Fetch the transcript data
-            fetched_transcript = transcript.fetch()
-            
-            # Get snippets and combine text
-            full_text = ' '.join([snippet.text for snippet in fetched_transcript.snippets])
+            # Combine all text segments
+            full_text = ' '.join([entry['text'] for entry in transcript_list])
             
             print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
             return full_text
