@@ -23,35 +23,60 @@ print(f"✅ CORS configured with origins: {allowed_origins}")
 # Handle ALL OPTIONS requests first (preflight)
 @app.before_request
 def handle_options():
-    if request.method == "OPTIONS":
-        origin = request.headers.get('Origin', '')
-        response = make_response('', 204)
+    try:
+        if request.method == "OPTIONS":
+            origin = request.headers.get('Origin', 'NO_ORIGIN')
+            print(f"🔵 OPTIONS preflight from: {origin}")
+            print(f"   Path: {request.path}")
+            print(f"   Allowed origins: {allowed_origins}")
+            
+            response = make_response('', 204)
+            
+            # Set CORS headers for preflight
+            if origin in allowed_origins:
+                response.headers['Access-Control-Allow-Origin'] = origin
+                print(f"   ✅ Origin matched - setting: {origin}")
+            else:
+                response.headers['Access-Control-Allow-Origin'] = allowed_origins[0] if allowed_origins else '*'
+                print(f"   ⚠️ Origin NOT matched - using fallback: {allowed_origins[0] if allowed_origins else '*'}")
+                
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '86400'
+            
+            print(f"   📤 Returning 204 with CORS headers")
+            return response
+    except Exception as e:
+        print(f"❌ Error in handle_options: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+    return None
+
+# Add CORS headers to ALL responses
+@app.after_request
+def add_cors_headers(response):
+    try:
+        origin = request.headers.get('Origin', 'NO_ORIGIN')
         
-        # Set CORS headers for preflight
+        # Only log non-static requests
+        if not request.path.startswith('/static'):
+            print(f"🟢 {request.method} {request.path} - Origin: {origin}")
+        
         if origin in allowed_origins:
             response.headers['Access-Control-Allow-Origin'] = origin
-        else:
+        elif allowed_origins:
             response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
             
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Max-Age'] = '86400'
-        return response
-
-# Add CORS headers to ALL responses
-@app.after_request
-def add_cors_headers(response):
-    origin = request.headers.get('Origin', '')
-    
-    if origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    elif allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = allowed_origins[0]
         
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    except Exception as e:
+        print(f"❌ Error in add_cors_headers: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+    
     return response
 
 # Import routes with error handling
