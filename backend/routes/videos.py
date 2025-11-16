@@ -163,11 +163,20 @@ def process_video():
         
     except Exception as e:
         error_msg = str(e)
-        if 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower():
+        
+        # Specific error messages for common issues
+        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower():
             return jsonify({
                 'success': False,
-                'error': 'Couldn\'t download video. Make sure it\'s public and the URL is correct'
-            }), 500
+                'error': 'This video doesn\'t have transcripts available and cannot be downloaded due to access restrictions. Please try a different video or one with captions enabled.',
+                'suggestion': 'Most news videos, educational content, and popular channels have transcripts and will work.'
+            }), 400
+        elif 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower():
+            return jsonify({
+                'success': False,
+                'error': 'Couldn\'t download video. Make sure it\'s public, has captions/transcripts, and the URL is correct.',
+                'suggestion': 'Check if the video has transcripts by clicking "..." under the video and looking for "Show transcript".'
+            }), 400
         return jsonify({'success': False, 'error': error_msg}), 500
 
 @bp.route('/history', methods=['GET'])
