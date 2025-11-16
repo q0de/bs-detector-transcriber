@@ -28,7 +28,7 @@ function FactCheckScore({ data }) {
     // Generate shareable badge URL or copy to clipboard
     const shareText = `Fact-Check Score: ${score}/10 - ${verdict}\n✅ Verified: ${verified} | ⚠️ Uncertain: ${uncertain} | ❌ False: ${falseClaims}`;
     navigator.clipboard.writeText(shareText);
-    alert('Fact-check summary copied to clipboard!');
+    console.log('Fact-check summary copied to clipboard!');
   };
 
   return (

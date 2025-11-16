@@ -45,7 +45,7 @@ function HistoryPage() {
       await videoAPI.deleteVideo(videoId);
       fetchVideos();
     } catch (err) {
-      alert('Failed to delete video');
+      console.error('Failed to delete video:', err);
     }
   };
 
@@ -60,7 +60,7 @@ function HistoryPage() {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Failed to export video');
+      console.error('Failed to export video:', err);
     }
   };
 

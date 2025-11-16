@@ -37,7 +37,7 @@ function ProfilePage() {
       const response = await paymentAPI.createPortalSession();
       window.location.href = response.data.portal_url;
     } catch (err) {
-      alert('Failed to open subscription portal');
+      console.error('Failed to open subscription portal:', err);
     }
   };
 

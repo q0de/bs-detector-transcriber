@@ -98,7 +98,7 @@ function PricingPage() {
       const response = await paymentAPI.createCheckoutSession(priceId);
       window.location.href = response.data.checkout_url;
     } catch (err) {
-      alert('Failed to start checkout. Please try again.');
+      console.error('Failed to start checkout:', err);
     }
   };
 

@@ -17,9 +17,11 @@ function SettingsPage() {
 
     try {
       await paymentAPI.cancelSubscription();
-      alert('Subscription canceled. You will retain access until the end of your billing period.');
+      console.log('Subscription canceled successfully');
+      // Refresh user data to show updated status
+      window.location.reload();
     } catch (err) {
-      alert('Failed to cancel subscription');
+      console.error('Failed to cancel subscription:', err);
     }
   };
 
@@ -28,7 +30,7 @@ function SettingsPage() {
       const response = await paymentAPI.createPortalSession();
       window.location.href = response.data.portal_url;
     } catch (err) {
-      alert('Failed to open subscription portal');
+      console.error('Failed to open subscription portal:', err);
     }
   };
 
@@ -106,7 +108,7 @@ function SettingsPage() {
             <button className="btn btn-danger" onClick={() => {
               if (window.confirm('Are you sure you want to delete your account? This cannot be undone.')) {
                 // TODO: Implement account deletion
-                alert('Account deletion not yet implemented');
+                console.log('Account deletion not yet implemented');
               }
             }}>
               Delete My Account
