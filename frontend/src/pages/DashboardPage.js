@@ -8,6 +8,7 @@ import BiasScale from '../components/BiasScale';
 import InteractiveTranscript from '../components/InteractiveTranscript';
 import CreatorBadge from '../components/CreatorBadge';
 import ShareButton from '../components/ShareButton';
+import BadgeEmbed from '../components/BadgeEmbed';
 import { videoAPI } from '../services/api';
 import './DashboardPage.css';
 
@@ -74,14 +75,14 @@ function DashboardPage() {
               {videoResult.minutes_charged} minutes used • {videoResult.minutes_remaining} minutes remaining
             </div>
             
-            {/* Share Button */}
-            <ShareButton videoResult={videoResult} />
-            
             {/* Check if analysis is structured JSON (fact-check) */}
             {typeof videoResult.analysis === 'object' && videoResult.analysis.fact_score !== undefined ? (
               // Render enhanced fact-check components
               <>
                 <FactCheckScore data={videoResult.analysis} />
+                
+                {/* Share Button - positioned right after score */}
+                <ShareButton videoResult={videoResult} />
                 
                 {/* Show creator reputation if available */}
                 {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
@@ -91,6 +92,12 @@ function DashboardPage() {
                 <InteractiveTranscript 
                   transcript={videoResult.transcription}
                   highlightedTranscript={videoResult.analysis.full_transcript_with_highlights}
+                />
+                
+                {/* Embeddable Badge Codes */}
+                <BadgeEmbed 
+                  videoId={videoResult.id}
+                  creatorId={videoResult.creator?.id}
                 />
               </>
             ) : (

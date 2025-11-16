@@ -14,7 +14,7 @@ function PricingPage() {
       name: 'Free',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      minutes: 60,
+      minutes: 40,
       features: [
         'Video transcription',
         'AI Summarization only',
@@ -27,27 +27,28 @@ function PricingPage() {
     },
     {
       name: 'Starter',
-      monthlyPrice: 12,
-      yearlyPrice: 120,
+      monthlyPrice: 17,
+      yearlyPrice: 170,
       minutes: 300,
       features: [
-        'Video transcription',
-        'AI Summarization + Fact-checking',
-        'Priority processing',
+        'Everything in Free',
+        '✨ FULL Fact-Checking',
+        '✨ Creator Reputation Tracking',
         'History saved 30 days',
-        'Export to TXT/PDF',
+        'Export to PDF',
         'Email support (24hr response)'
       ],
       popular: true,
-      priceId: 'starter_monthly'
+      priceId: 'starter_monthly',
+      savings: 34
     },
     {
       name: 'Pro',
-      monthlyPrice: 29,
-      yearlyPrice: 290,
+      monthlyPrice: 39,
+      yearlyPrice: 390,
       minutes: 1000,
       features: [
-        'All Starter features',
+        'Everything in Starter',
         'History saved 90 days',
         'Export to PDF/Word/DOCX',
         'Custom analysis prompts (5 saved)',
@@ -55,15 +56,16 @@ function PricingPage() {
         'Priority support (12hr response)'
       ],
       popular: false,
-      priceId: 'pro_monthly'
+      priceId: 'pro_monthly',
+      savings: 78
     },
     {
       name: 'Business',
-      monthlyPrice: 79,
-      yearlyPrice: 790,
+      monthlyPrice: 99,
+      yearlyPrice: 990,
       minutes: 3500,
       features: [
-        'All Pro features',
+        'Everything in Pro',
         'History saved forever',
         'Team workspace (up to 10 users)',
         'Unlimited custom prompts',
@@ -73,7 +75,8 @@ function PricingPage() {
         'White-label option'
       ],
       popular: false,
-      priceId: 'business_monthly'
+      priceId: 'business_monthly',
+      savings: 198
     }
   ];
 

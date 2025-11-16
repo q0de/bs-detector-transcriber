@@ -16,8 +16,8 @@ function PricingCard({ plan, billingPeriod, onSubscribe }) {
           ${price}
           <span className="period">/{billingPeriod === 'monthly' ? 'mo' : 'yr'}</span>
         </div>
-        {billingPeriod === 'yearly' && price > 0 && (
-          <div className="savings-badge">Save 17%</div>
+        {billingPeriod === 'yearly' && price > 0 && plan.savings && (
+          <div className="savings-badge">Save ${plan.savings}/yr</div>
         )}
       </div>
       

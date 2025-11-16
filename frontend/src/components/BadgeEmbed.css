@@ -1,0 +1,151 @@
+.badge-embed {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.badge-embed-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.badge-embed-header h3 {
+  font-size: 24px;
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+}
+
+.badge-embed-header p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.badge-section {
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.badge-section:last-of-type {
+  border-bottom: none;
+}
+
+.badge-preview {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.badge-preview h4 {
+  font-size: 16px;
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+}
+
+.badge-preview img {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+}
+
+.embed-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.embed-code-block {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #2c3e50;
+  color: white;
+}
+
+.code-header span {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.copy-code-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-code-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.copy-code-btn.copied {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.code-content {
+  padding: 16px;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #2c3e50;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.badge-info {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.badge-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .badge-embed {
+    padding: 16px;
+  }
+
+  .code-content {
+    font-size: 11px;
+  }
+}
+

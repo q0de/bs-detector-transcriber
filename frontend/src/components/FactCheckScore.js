@@ -24,13 +24,6 @@ function FactCheckScore({ data }) {
     scoreLabel = 'Mixed';
   }
 
-  const handleShare = () => {
-    // Generate shareable badge URL or copy to clipboard
-    const shareText = `Fact-Check Score: ${score}/10 - ${verdict}\n✅ Verified: ${verified} | ⚠️ Uncertain: ${uncertain} | ❌ False: ${falseClaims}`;
-    navigator.clipboard.writeText(shareText);
-    console.log('Fact-check summary copied to clipboard!');
-  };
-
   return (
     <div className="fact-check-score-card">
       <div className="score-header">
@@ -74,12 +67,6 @@ function FactCheckScore({ data }) {
           <p>{data.summary}</p>
         </div>
       )}
-      
-      <div className="score-actions">
-        <button className="btn-share" onClick={handleShare}>
-          📤 Share Results
-        </button>
-      </div>
     </div>
   );
 }

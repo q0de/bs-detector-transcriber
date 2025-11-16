@@ -69,5 +69,11 @@ export const paymentAPI = {
   getBillingHistory: () => api.get('/payments/billing-history'),
 };
 
+export const referralAPI = {
+  getCode: () => api.get('/referrals/code'),
+  applyCode: (code) => api.post('/referrals/apply', { referral_code: code }),
+  getStats: () => api.get('/referrals/stats'),
+};
+
 export default api;
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { userAPI, paymentAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import ReferralDashboard from '../components/ReferralDashboard';
 import './ProfilePage.css';
 
 function ProfilePage() {
@@ -116,6 +117,11 @@ function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Referral Section */}
+        <div className="profile-section">
+          <ReferralDashboard />
+        </div>
         
         {/* Billing History */}
         {invoices.length > 0 && (

@@ -1,0 +1,250 @@
+.referral-dashboard {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.referral-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.referral-header h2 {
+  font-size: 32px;
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+}
+
+.referral-header p {
+  font-size: 18px;
+  color: #666;
+  margin: 0;
+}
+
+.referral-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.referral-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.code-display,
+.link-display {
+  display: flex;
+  gap: 12px;
+}
+
+.code-input,
+.link-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+.copy-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.copy-btn.copied {
+  background: #4CAF50;
+  animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.referral-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #667eea;
+}
+
+.stat-card.success {
+  border-left-color: #4CAF50;
+}
+
+.stat-card.pending {
+  border-left-color: #FF9800;
+}
+
+.stat-card.bonus {
+  border-left-color: #9C27B0;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.referral-how-it-works {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.referral-how-it-works h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+}
+
+.referral-how-it-works ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.referral-how-it-works li {
+  margin-bottom: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.referral-list {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.referral-list h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.referrals-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.referral-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background: rgba(255, 152, 0, 0.15);
+  color: #E65100;
+}
+
+.status-badge.completed,
+.status-badge.rewarded {
+  background: rgba(76, 175, 80, 0.15);
+  color: #2E7D32;
+}
+
+.referral-date {
+  color: #666;
+  font-size: 14px;
+}
+
+.referral-reward {
+  color: #667eea;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.loading,
+.error-message {
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #666;
+}
+
+.error-message {
+  color: #F44336;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .referral-dashboard {
+    padding: 16px;
+  }
+
+  .code-display,
+  .link-display {
+    flex-direction: column;
+  }
+
+  .copy-btn {
+    width: 100%;
+  }
+
+  .referral-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .referral-item {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
