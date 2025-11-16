@@ -6,6 +6,7 @@ import FactCheckScore from '../components/FactCheckScore';
 import ClaimsList from '../components/ClaimsList';
 import BiasScale from '../components/BiasScale';
 import InteractiveTranscript from '../components/InteractiveTranscript';
+import CreatorBadge from '../components/CreatorBadge';
 import { videoAPI } from '../services/api';
 import './DashboardPage.css';
 
@@ -77,6 +78,10 @@ function DashboardPage() {
               // Render enhanced fact-check components
               <>
                 <FactCheckScore data={videoResult.analysis} />
+                
+                {/* Show creator reputation if available */}
+                {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
+                
                 <ClaimsList data={videoResult.analysis} />
                 <BiasScale data={videoResult.analysis} />
                 <InteractiveTranscript 
