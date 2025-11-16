@@ -12,12 +12,41 @@ function VideoProcessor({ onProcessed }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState(null);
+  const [videoMetadata, setVideoMetadata] = useState(null);
+  const [processingStatus, setProcessingStatus] = useState('');
   const navigate = useNavigate();
+
+  const fetchVideoMetadata = async (videoUrl) => {
+    try {
+      // Extract video ID from URL
+      const videoId = videoUrl.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+      if (!videoId) return null;
+
+      // Use YouTube oEmbed API (no auth needed)
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          title: data.title,
+          author: data.author_name,
+          thumbnail: data.thumbnail_url
+        };
+      }
+    } catch (err) {
+      console.error('Failed to fetch metadata:', err);
+    }
+    return null;
+  };
 
   const handleEstimate = async () => {
     if (!url) return;
     
     try {
+      // Fetch video metadata for preview
+      const metadata = await fetchVideoMetadata(url);
+      if (metadata) {
+        setVideoMetadata(metadata);
+      }
       // TODO: Add estimate endpoint
       // For now, we'll estimate based on URL
       setEstimatedMinutes(15); // Placeholder
@@ -56,11 +85,24 @@ function VideoProcessor({ onProcessed }) {
 
     setLoading(true);
     setError('');
+    setProcessingStatus('Fetching video info...');
 
     try {
       // Trim whitespace from URL
       const cleanUrl = url.trim();
+      
+      // Fetch metadata if we don't have it yet
+      if (!videoMetadata) {
+        const metadata = await fetchVideoMetadata(cleanUrl);
+        if (metadata) {
+          setVideoMetadata(metadata);
+        }
+      }
+      
+      setProcessingStatus('Processing video...');
       const response = await videoAPI.process(cleanUrl, analysisType);
+      
+      setProcessingStatus('Analysis complete!');
       
       // Call callback if provided
       if (onProcessed) {
@@ -71,6 +113,7 @@ function VideoProcessor({ onProcessed }) {
       navigate('/dashboard', { state: { videoResult: response.data } });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to process video. Please try again.');
+      setProcessingStatus('');
     } finally {
       setLoading(false);
     }
@@ -173,6 +216,28 @@ function VideoProcessor({ onProcessed }) {
         
         {error && (
           <div className="message message-error">{error}</div>
+        )}
+        
+        {loading && videoMetadata && (
+          <div className="video-preview">
+            <div className="video-preview-content">
+              {videoMetadata.thumbnail && (
+                <img 
+                  src={videoMetadata.thumbnail} 
+                  alt="Video thumbnail" 
+                  className="video-thumbnail"
+                />
+              )}
+              <div className="video-info">
+                <h3>{videoMetadata.title}</h3>
+                <p className="video-author">👤 {videoMetadata.author}</p>
+                <div className="processing-status">
+                  <div className="spinner"></div>
+                  <span>{processingStatus}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         
         <button
