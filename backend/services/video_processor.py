@@ -86,16 +86,40 @@ class VideoProcessor:
     def estimate_duration(self, video_url):
         """Estimate video duration without downloading"""
         try:
+            # Get proxy from environment (same as download_video)
+            proxy_url = os.environ.get('PROXY_URL', None)
+            
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
+                # Anti-bot detection measures
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'web'],
+                        'player_skip': ['webpage', 'configs'],
+                    }
+                },
+                # Rotate user agents
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-us,en;q=0.5',
+                    'Sec-Fetch-Mode': 'navigate',
+                },
             }
+            
+            # Add proxy if configured
+            if proxy_url:
+                print(f"🌐 Using proxy for duration estimation...")
+                ydl_opts['proxy'] = proxy_url
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(video_url, download=False)
                 duration = info.get('duration', 0)
+                print(f"✅ Duration estimated: {duration}s ({duration/60:.1f} min)")
                 return duration
         except Exception as e:
+            print(f"❌ Duration estimation failed: {str(e)}")
             raise Exception(f"Couldn't estimate duration: {str(e)}")
     
     def download_video(self, video_url, output_path):
@@ -352,11 +376,35 @@ Remember: Return ONLY the JSON object, no other text."""
         if title == 'Untitled':
             try:
                 print("📊 Attempting to fetch video metadata...")
+                
+                # Get proxy from environment
+                proxy_url = os.environ.get('PROXY_URL', None)
+                
                 ydl_opts = {
                     'quiet': True,
                     'no_warnings': True,
-                    'extract_flat': True  # Faster, less intrusive
+                    'extract_flat': True,  # Faster, less intrusive
+                    # Anti-bot detection measures
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'player_skip': ['webpage', 'configs'],
+                        }
+                    },
+                    # Rotate user agents
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Sec-Fetch-Mode': 'navigate',
+                    },
                 }
+                
+                # Add proxy if configured
+                if proxy_url:
+                    print(f"🌐 Using proxy for metadata fetch...")
+                    ydl_opts['proxy'] = proxy_url
+                
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(video_url, download=False)
                     title = info.get('title', 'Untitled')

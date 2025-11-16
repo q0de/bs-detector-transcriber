@@ -3,6 +3,7 @@ from middleware.auth_middleware import verify_token
 from services.supabase_client import get_supabase_client
 from datetime import datetime
 import math
+import os
 
 bp = Blueprint('videos', __name__)
 
@@ -75,10 +76,14 @@ def process_video():
         
         # Estimate duration (skip if we have existing metadata)
         if not existing_transcript:
+            print("⏱️ Estimating video duration...")
             estimated_duration = processor.estimate_duration(video_url)
+            print(f"✅ Estimated duration: {estimated_duration}s ({estimated_duration/60:.1f} min)")
         else:
             estimated_duration = video_metadata['duration_minutes'] * 60
+            print(f"✅ Using cached duration: {estimated_duration}s ({estimated_duration/60:.1f} min)")
         estimated_minutes = math.ceil(estimated_duration / 60)
+        print(f"📊 Will charge {estimated_minutes} minutes for this video")
         
         # Check limit
         used = float(user.get('minutes_used_this_month', 0))
@@ -163,20 +168,28 @@ def process_video():
         
     except Exception as e:
         error_msg = str(e)
+        print(f"❌ VIDEO PROCESS ERROR: {error_msg}")
+        import traceback
+        traceback.print_exc()
         
         # Specific error messages for common issues
         if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower():
+            print("⚠️ Detected bot/sign-in error - likely YouTube blocking")
             return jsonify({
                 'success': False,
                 'error': 'This video doesn\'t have transcripts available and cannot be downloaded due to access restrictions. Please try a different video or one with captions enabled.',
                 'suggestion': 'Most news videos, educational content, and popular channels have transcripts and will work.'
             }), 400
-        elif 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower():
+        elif 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower() or 'duration' in error_msg.lower():
+            print("⚠️ Detected download/duration error")
             return jsonify({
                 'success': False,
-                'error': 'Couldn\'t download video. Make sure it\'s public, has captions/transcripts, and the URL is correct.',
-                'suggestion': 'Check if the video has transcripts by clicking "..." under the video and looking for "Show transcript".'
+                'error': 'Couldn\'t access video. Make sure it\'s public, has captions/transcripts, and the URL is correct.',
+                'suggestion': 'Check if the video has transcripts by clicking "..." under the video and looking for "Show transcript".',
+                'debug_info': error_msg if os.getenv('FLASK_ENV') == 'development' else None
             }), 400
+        
+        print(f"⚠️ Unexpected error type - returning 500")
         return jsonify({'success': False, 'error': error_msg}), 500
 
 @bp.route('/history', methods=['GET'])
