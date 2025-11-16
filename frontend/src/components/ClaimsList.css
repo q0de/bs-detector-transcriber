@@ -140,6 +140,45 @@
   color: #C62828;
 }
 
+.claim-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.claim-copy {
+  background: #667eea;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.claim-copy:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.claim-copy.copied {
+  background: #4CAF50;
+  animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
 .claim-expand {
   background: #f5f5f5;
   border: none;
