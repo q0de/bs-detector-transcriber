@@ -14,20 +14,30 @@ function Navbar() {
       const token = localStorage.getItem('access_token');
       const storedUser = localStorage.getItem('user');
       
+      console.log('🔍 Navbar: Checking auth state');
+      console.log('  - Token exists:', !!token);
+      console.log('  - Stored user exists:', !!storedUser);
+      
       if (token && storedUser) {
         // User is logged in - set immediately for fast UI update
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          console.log('  - ✅ Setting user from localStorage:', parsedUser.email);
+          setUser(parsedUser);
         } catch (e) {
-          console.error('Failed to parse stored user:', e);
+          console.error('  - ❌ Failed to parse stored user:', e);
         }
+      } else {
+        console.log('  - ℹ️ No token/user in localStorage');
       }
       
       // Also check with Supabase (this might be slower)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        console.log('  - ✅ Supabase confirmed user:', user.email);
         setUser(user);
       } else if (!token) {
+        console.log('  - ℹ️ No Supabase user, setting to null');
         setUser(null);
       }
     };
