@@ -11,7 +11,17 @@ import './DashboardPage.css';
 
 function DashboardPage() {
   const location = useLocation();
-  const [videoResult, setVideoResult] = useState(location.state?.videoResult || null);
+  const [videoResult, setVideoResult] = useState(() => {
+    const result = location.state?.videoResult;
+    if (result?.analysis && typeof result.analysis === 'string') {
+      try {
+        result.analysis = JSON.parse(result.analysis);
+      } catch (e) {
+        console.log('Analysis is plain text, not JSON');
+      }
+    }
+    return result || null;
+  });
   const [recentVideos, setRecentVideos] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +39,14 @@ function DashboardPage() {
   };
 
   const handleVideoProcessed = (result) => {
+    // Parse analysis if it's a JSON string
+    if (result.analysis && typeof result.analysis === 'string') {
+      try {
+        result.analysis = JSON.parse(result.analysis);
+      } catch (e) {
+        console.log('Analysis is plain text, not JSON');
+      }
+    }
     setVideoResult(result);
     fetchRecentVideos();
   };

@@ -176,15 +176,13 @@
   font-weight: 700;
   line-height: 1.4;
   color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .video-author {
   margin: 0 0 12px 0;
   font-size: 14px;
   color: white;
-  opacity: 0.95;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  opacity: 1;
 }
 
 .processing-status {
@@ -202,7 +200,6 @@
   font-size: 15px;
   font-weight: 600;
   color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   line-height: 1;
 }
 
