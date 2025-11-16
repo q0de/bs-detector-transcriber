@@ -195,7 +195,7 @@ function VideoProcessor({ onProcessed }) {
               <span className="segment-icon">📝</span>
               <span className="segment-text">
                 <strong>Summarize</strong>
-                <small>Quick overview</small>
+                <small>Quick overview • 1× minutes</small>
               </span>
             </button>
             <button
@@ -206,8 +206,8 @@ function VideoProcessor({ onProcessed }) {
             >
               <span className="segment-icon">🔍</span>
               <span className="segment-text">
-                <strong>Fact Check</strong>
-                <small>Full BS detection</small>
+                <strong>Fact Check ⭐</strong>
+                <small>Full BS detection • 2.5× minutes</small>
               </span>
             </button>
           </div>
@@ -215,7 +215,30 @@ function VideoProcessor({ onProcessed }) {
         
         {estimatedMinutes && (
           <div className="estimate-info">
-            ℹ️ This will use approximately {estimatedMinutes} minutes
+            <div className="estimate-breakdown">
+              <div className="estimate-row">
+                <span>📹 Video length:</span>
+                <strong>{estimatedMinutes} min</strong>
+              </div>
+              {analysisType === 'fact-check' && (
+                <>
+                  <div className="estimate-row">
+                    <span>✖️ Multiplier:</span>
+                    <strong>2.5×</strong>
+                  </div>
+                  <div className="estimate-row estimate-total">
+                    <span>💳 Total cost:</span>
+                    <strong>{Math.ceil(estimatedMinutes * 2.5)} minutes</strong>
+                  </div>
+                </>
+              )}
+              {analysisType === 'summarize' && (
+                <div className="estimate-row estimate-total">
+                  <span>💳 Total cost:</span>
+                  <strong>{estimatedMinutes} minutes</strong>
+                </div>
+              )}
+            </div>
           </div>
         )}
         

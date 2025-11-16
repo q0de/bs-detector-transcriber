@@ -128,6 +128,33 @@ function PricingPage() {
           </div>
         </div>
 
+        <div className="pricing-explainer">
+          <div className="explainer-card">
+            <h3>💡 How Minutes Work</h3>
+            <div className="minute-types">
+              <div className="minute-type">
+                <div className="minute-icon">📝</div>
+                <div className="minute-details">
+                  <strong>Summarize</strong>
+                  <p>1 video minute = 1 credit minute</p>
+                  <small>Quick AI-powered summaries</small>
+                </div>
+              </div>
+              <div className="minute-type premium">
+                <div className="minute-icon">🔍</div>
+                <div className="minute-details">
+                  <strong>Fact Check ⭐</strong>
+                  <p>1 video minute = 2.5 credit minutes</p>
+                  <small>Premium BS detection with sources, claims analysis, and creator reputation</small>
+                </div>
+              </div>
+            </div>
+            <div className="example-box">
+              <strong>Example:</strong> 300 minutes = <strong>300 summaries</strong> OR <strong>120 fact-checks</strong> (or any combination)
+            </div>
+          </div>
+        </div>
+
         <div className="pricing-grid">
           {plans.map((plan) => (
             <PricingCard
@@ -152,6 +179,10 @@ function PricingPage() {
           <div className="faq-item">
             <h3>What happens if I exceed my limit?</h3>
             <p>You'll need to upgrade your plan or purchase additional minutes. Processing will pause until you upgrade.</p>
+          </div>
+          <div className="faq-item">
+            <h3>Why does fact-checking cost more minutes?</h3>
+            <p>Fact-checking uses advanced AI to analyze every claim, find sources, check creator reputation, and provide detailed evidence. This requires significantly more computational power (3-5x) than simple summarization, so we use a 2.5× multiplier to reflect the real cost while keeping it affordable.</p>
           </div>
         </div>
       </div>

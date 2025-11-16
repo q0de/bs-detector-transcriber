@@ -198,8 +198,11 @@ def process_video():
                 print(f"⚠️ Creator tracking failed (non-critical): {str(e)}")
                 # Continue processing even if creator tracking fails
         
-        # Calculate actual minutes charged (round up)
-        actual_minutes = math.ceil(result['duration_minutes'])
+        # Calculate actual minutes charged with multiplier (round up)
+        # Summarize: 1x multiplier (standard)
+        # Fact-check: 2.5x multiplier (premium - reflects higher AI costs)
+        multiplier = 2.5 if analysis_type == 'fact-check' else 1.0
+        actual_minutes = math.ceil(result['duration_minutes'] * multiplier)
         
         # Save to database
         video_data = {
@@ -247,6 +250,7 @@ def process_video():
             'platform': result.get('platform', 'unknown'),
             'duration_minutes': result['duration_minutes'],
             'minutes_charged': actual_minutes,
+            'minute_multiplier': multiplier,
             'transcription': result['transcription'],
             'analysis': result['analysis'],
             'minutes_remaining': remaining
