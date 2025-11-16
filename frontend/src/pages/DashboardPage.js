@@ -7,6 +7,7 @@ import ClaimsList from '../components/ClaimsList';
 import BiasScale from '../components/BiasScale';
 import InteractiveTranscript from '../components/InteractiveTranscript';
 import CreatorBadge from '../components/CreatorBadge';
+import ShareButton from '../components/ShareButton';
 import { videoAPI } from '../services/api';
 import './DashboardPage.css';
 
@@ -72,6 +73,9 @@ function DashboardPage() {
             <div className="results-info">
               {videoResult.minutes_charged} minutes used • {videoResult.minutes_remaining} minutes remaining
             </div>
+            
+            {/* Share Button */}
+            <ShareButton videoResult={videoResult} />
             
             {/* Check if analysis is structured JSON (fact-check) */}
             {typeof videoResult.analysis === 'object' && videoResult.analysis.fact_score !== undefined ? (
