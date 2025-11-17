@@ -312,9 +312,12 @@ IMPORTANT: In correction_notes, document specific corrections:
 Be thorough and specific in your correction notes!"""
 
             # Try multiple models with fallback (same as analyze_with_claude)
+            # Prioritize Sonnet models for better re-check quality
             models_to_try = [
-                "claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet v2 (Oct 2024)
-                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024)
+                "claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet v2 (Oct 2024) - BEST
+                "claude-3-5-sonnet-20240620",  # Claude 3.5 Sonnet (June 2024) - fallback
+                "claude-3-sonnet-20240229",    # Claude 3 Sonnet (Feb 2024) - older but reliable
+                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024) - fast
                 "claude-3-haiku-20240307",     # Claude 3 Haiku (fallback)
             ]
             
@@ -426,8 +429,8 @@ Transcription:
                 include_highlights_instruction = transcript_length < 12000
                 
                 if include_highlights_instruction:
-                    highlights_instruction = '"full_transcript_with_highlights": "<the full transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted before each claim>"'
-                    print(f"📝 Short transcript ({transcript_length} chars) - asking Claude to add highlights", flush=True)
+                    highlights_instruction = '"full_transcript_with_highlights": "<REQUIRED: Return the FULL transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted BEFORE each corresponding claim. Do NOT omit this field.>"'
+                    print(f"📝 Short transcript ({transcript_length} chars) - REQUIRING Claude to add highlights", flush=True)
                 else:
                     highlights_instruction = '"full_transcript_with_highlights": "<OPTIONAL - omit this field for long transcripts>"'
                     print(f"📝 Long transcript ({transcript_length} chars) - will use auto-highlighting instead", flush=True)
@@ -509,6 +512,8 @@ FACT SCORE GUIDANCE:
 Analyze this transcription:
 {transcription}
 
+{"REQUIRED: For short transcripts, you MUST include the 'full_transcript_with_highlights' field with the complete transcript and all highlight tags. Do not omit this field." if include_highlights_instruction else ""}
+
 Remember: Return ONLY the JSON object, no other text."""
             else:
                 prompt = f"Analyze the following transcription:\n\n{transcription}"
@@ -516,9 +521,12 @@ Remember: Return ONLY the JSON object, no other text."""
             print(f"Sending {len(prompt)} characters to Claude...")
             
             # Try different models in order of preference with their max_tokens limits
+            # Prioritize Sonnet models for better quality, especially for highlights
             models_to_try = [
-                ("claude-3-5-sonnet-20241022", 8000),   # Claude 3.5 Sonnet v2 (Oct 2024)
-                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024)
+                ("claude-3-5-sonnet-20241022", 8000),   # Claude 3.5 Sonnet v2 (Oct 2024) - BEST
+                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (June 2024) - fallback
+                ("claude-3-sonnet-20240229", 8000),     # Claude 3 Sonnet (Feb 2024) - older but reliable
+                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024) - fast
                 ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (fallback)
             ]
             
