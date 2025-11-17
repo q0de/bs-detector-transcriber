@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import './AuthPage.css';
 
+// Updated: 2025-11-17
 function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -176,6 +178,9 @@ function SignUpPage() {
         <div className="auth-divider">
           <span>──────────  OR  ──────────</span>
         </div>
+        
+        {/* Google Sign-In Button */}
+        <GoogleSignInButton mode="signup" />
         
         <div className="auth-footer">
           <p>Already have an account? <Link to="/login">Log in</Link></p>
