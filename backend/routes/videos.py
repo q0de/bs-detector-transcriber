@@ -4,6 +4,7 @@ from services.supabase_client import get_supabase_client
 from datetime import datetime
 import math
 import os
+import json
 
 bp = Blueprint('videos', __name__)
 
@@ -204,6 +205,21 @@ def process_video():
         multiplier = 2.5 if analysis_type == 'fact-check' else 1.0
         actual_minutes = math.ceil(result['duration_minutes'] * multiplier)
         
+        # Prepare analysis for storage - ensure it's a JSON string
+        analysis_to_store = result['analysis']
+        if isinstance(analysis_to_store, dict):
+            # Convert dict to JSON string for storage in TEXT column
+            try:
+                analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=False)
+                print("✅ Converted analysis dict to JSON string for storage")
+            except Exception as e:
+                print(f"⚠️ Failed to serialize analysis to JSON: {e}")
+                # Fall back to string representation
+                analysis_to_store = str(analysis_to_store)
+        elif not isinstance(analysis_to_store, str):
+            # Convert to string if it's not already
+            analysis_to_store = str(analysis_to_store)
+        
         # Save to database
         video_data = {
             'user_id': user_id,
@@ -212,7 +228,7 @@ def process_video():
             'platform': result.get('platform', 'unknown'),
             'duration_minutes': result['duration_minutes'],
             'transcription': result['transcription'],
-            'analysis': result['analysis'],
+            'analysis': analysis_to_store,  # Now guaranteed to be a string
             'analysis_type': analysis_type,
             'processing_status': 'completed',
             'minutes_charged': actual_minutes,

@@ -155,16 +155,74 @@ function DashboardPage() {
               
               console.log('🔍 [Render] Analysis type:', typeof analysis);
               console.log('🔍 [Render] Analysis type (videoResult):', videoResult.analysis_type);
-              console.log('🔍 [Render] Analysis preview:', typeof analysis === 'string' ? analysis.substring(0, 100) : 'object');
+              console.log('🔍 [Render] Analysis length:', typeof analysis === 'string' ? analysis.length : 'N/A');
+              console.log('🔍 [Render] Analysis preview:', typeof analysis === 'string' ? analysis.substring(0, 200) : 'object');
               
               // Parse if it's a JSON string
               if (typeof analysis === 'string') {
                 try {
-                  analysis = JSON.parse(analysis);
-                  console.log('✅ [Render] Parsed analysis successfully');
-                  console.log('✅ [Render] Has fact_score?', analysis?.fact_score !== undefined);
+                  // Try to repair common JSON issues
+                  let jsonString = analysis.trim();
+                  
+                  // Check if it looks like JSON
+                  if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                    analysis = JSON.parse(jsonString);
+                    console.log('✅ [Render] Parsed analysis successfully');
+                  } else if (jsonString.startsWith('{')) {
+                    // JSON might be truncated - try to close it
+                    console.warn('⚠️ [Render] JSON appears truncated, attempting repair...');
+                    // Try to find the last complete property and close the JSON
+                    const lastCompleteBrace = jsonString.lastIndexOf('}');
+                    if (lastCompleteBrace > 0) {
+                      // Try parsing up to the last complete brace
+                      try {
+                        const partial = jsonString.substring(0, lastCompleteBrace + 1);
+                        analysis = JSON.parse(partial);
+                        console.log('✅ [Render] Repaired and parsed truncated JSON');
+                      } catch (e2) {
+                        console.error('❌ [Render] Could not repair JSON:', e2);
+                        // Fall back to trying to extract just the fact_score if possible
+                        const factScoreMatch = jsonString.match(/"fact_score"\s*:\s*(\d+)/);
+                        const verdictMatch = jsonString.match(/"overall_verdict"\s*:\s*"([^"]+)"/);
+                        if (factScoreMatch) {
+                          console.log('🔧 [Render] Extracted fact_score from broken JSON:', factScoreMatch[1]);
+                          // Create a minimal analysis object
+                          analysis = {
+                            fact_score: parseInt(factScoreMatch[1]),
+                            overall_verdict: verdictMatch ? verdictMatch[1] : 'Unknown',
+                            summary: 'Analysis data corrupted - please reprocess this video',
+                            verified_claims: []
+                          };
+                        } else {
+                          throw e2;
+                        }
+                      }
+                    } else {
+                      throw new Error('JSON string does not appear to be valid JSON');
+                    }
+                  } else {
+                    // Not JSON, treat as plain text
+                    console.log('📝 [Render] Analysis is plain text, not JSON');
+                  }
                 } catch (e) {
                   console.error('❌ [Render] Failed to parse analysis:', e);
+                  console.error('❌ [Render] Error at position:', e.message.match(/position (\d+)/)?.[1]);
+                  // Try to extract what we can
+                  const factScoreMatch = analysis.match(/"fact_score"\s*:\s*(\d+)/);
+                  const verifiedMatch = analysis.match(/"verified_claims"\s*:\s*\[/);
+                  if (factScoreMatch || verifiedMatch) {
+                    console.log('🔧 [Render] Detected fact-check indicators in broken JSON, attempting recovery...');
+                    // This is definitely a fact-check, even if JSON is broken
+                    // We'll render it as fact-check but show an error message
+                    analysis = {
+                      fact_score: factScoreMatch ? parseInt(factScoreMatch[1]) : 0,
+                      overall_verdict: 'Analysis Error',
+                      summary: '⚠️ Analysis data is corrupted. The video was fact-checked but the full analysis could not be loaded. Please reprocess this video.',
+                      verified_claims: [],
+                      _error: true,
+                      _rawData: analysis.substring(0, 1000) // Keep first 1000 chars for debugging
+                    };
+                  }
                 }
               }
               
@@ -187,6 +245,14 @@ function DashboardPage() {
                 // Render enhanced fact-check components
                 return (
                   <>
+                    {/* Show error message if JSON was corrupted */}
+                    {analysis._error && (
+                      <div className="message message-warning" style={{ marginBottom: '20px', padding: '16px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px' }}>
+                        <strong>⚠️ Analysis Data Corrupted</strong>
+                        <p>The fact-check analysis for this video appears to be corrupted. The score and basic info are shown, but some details may be missing. Please reprocess this video to get the full analysis.</p>
+                      </div>
+                    )}
+                    
                     <FactCheckScore data={analysis} />
                     
                     {/* Share Button - positioned right after score */}
