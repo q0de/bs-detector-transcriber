@@ -89,7 +89,7 @@ def add_cors_headers(response):
 # Note: Routes are imported but health check should work even if routes fail
 try:
     print("📦 Importing routes...")
-    from routes import auth, videos, payments, users, referrals, badges
+    from routes import auth, videos, payments, users  # , referrals, badges - temporarily disabled
     print("✅ Routes imported successfully")
     
     # Register blueprints
@@ -98,8 +98,8 @@ try:
     app.register_blueprint(videos.bp, url_prefix='/api/videos')
     app.register_blueprint(payments.bp, url_prefix='/api/payments')
     app.register_blueprint(users.bp, url_prefix='/api/users')
-    app.register_blueprint(referrals.referrals_bp, url_prefix='/api/referrals')
-    app.register_blueprint(badges.badges_bp, url_prefix='/api/badges')
+    # app.register_blueprint(referrals.referrals_bp, url_prefix='/api/referrals')  # Temporarily disabled
+    # app.register_blueprint(badges.badges_bp, url_prefix='/api/badges')  # Temporarily disabled
     print("✅ Blueprints registered successfully")
 except Exception as e:
     print(f"❌ Error importing/registering routes: {e}", file=sys.stderr)
