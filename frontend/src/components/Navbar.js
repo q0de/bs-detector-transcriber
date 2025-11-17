@@ -2,25 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { userAPI } from '../services/api';
-import AuthModal from './AuthModal';
 import './Navbar.css';
 
 function Navbar() {
   const [user, setUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [navbarVariant, setNavbarVariant] = useState(() => {
-    // Load from localStorage or default to 'option6' (Hybrid - best of both worlds)
-    return localStorage.getItem('navbarVariant') || 'option6';
-  });
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Save variant to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('navbarVariant', navbarVariant);
-  }, [navbarVariant]);
 
   // DEBUG: Log current user state on every render
   console.log('🔄 Navbar render - user:', user?.email || 'null', 'userDetails:', userDetails?.subscription_tier || 'null');
@@ -230,69 +219,16 @@ function Navbar() {
             <>
               <Link to="/pricing">Pricing</Link>
               
-              {/* OPTION 1: Single Primary CTA - No Login in Navbar */}
-              {navbarVariant === 'option1' && (
-                location.pathname === '/' ? (
-                  <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
-                ) : (
-                  <Link to="/" className="btn btn-primary">Try Free →</Link>
-                )
+              {/* Option 1: Single Primary CTA - Context-aware button text */}
+              {location.pathname === '/' ? (
+                <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
+              ) : (
+                <Link to="/" className="btn btn-primary">Try Free →</Link>
               )}
-              
-              {/* OPTION 3: Context-Aware Single Button */}
-              {navbarVariant === 'option3' && (
-                location.pathname === '/' ? (
-                  <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
-                ) : (
-                  <Link to="/" className="btn btn-primary">Try Free →</Link>
-                )
-              )}
-              
-              {/* OPTION 5: Get Started Button (opens modal) */}
-              {navbarVariant === 'option5' && (
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowAuthModal(true)}
-                >
-                  Get Started
-                </button>
-              )}
-              
-              {/* OPTION 6: Hybrid - Single CTA Button that Opens Modal */}
-              {navbarVariant === 'option6' && (
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setShowAuthModal(true)}
-                >
-                  {location.pathname === '/' ? 'Sign Up Free' : 'Try Free →'}
-                </button>
-              )}
-              
-              {/* Variant Selector (Demo Mode) */}
-              <div className="navbar-variant-selector">
-                <select 
-                  value={navbarVariant} 
-                  onChange={(e) => setNavbarVariant(e.target.value)}
-                  className="variant-select"
-                  title="Switch navbar UX variants"
-                >
-                  <option value="option1">Option 1: Single CTA</option>
-                  <option value="option3">Option 3: Context-Aware</option>
-                  <option value="option5">Option 5: Get Started</option>
-                  <option value="option6">Option 6: Hybrid (1+5) ⭐</option>
-                </select>
-              </div>
             </>
           )}
         </div>
       </div>
-      {/* Auth Modal for Option 5 & 6 */}
-      {(navbarVariant === 'option5' || navbarVariant === 'option6') && (
-        <AuthModal 
-          isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)}
-        />
-      )}
     </nav>
   );
 }
