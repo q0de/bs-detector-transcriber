@@ -11,54 +11,62 @@ function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in (check localStorage first for immediate update)
+    // Check if user is logged in
     const checkUser = async () => {
-      const token = localStorage.getItem('access_token');
-      const storedUser = localStorage.getItem('user');
+      // First, try to get session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (token && storedUser) {
-        // User is logged in - set immediately for fast UI update
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          
-          // Fetch full user details including subscription
-          try {
-            const response = await userAPI.getCurrentUser();
-            setUserDetails(response.data);
-          } catch (err) {
-            console.error('Failed to fetch user details:', err);
-          }
-        } catch (e) {
-          console.error('Failed to parse stored user:', e);
-        }
-      }
-      
-      // Also check with Supabase (this might be slower)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        // Fetch details for this user too
+      if (session?.user) {
+        setUser(session.user);
+        // Fetch full user details
         try {
           const response = await userAPI.getCurrentUser();
           setUserDetails(response.data);
         } catch (err) {
           console.error('Failed to fetch user details:', err);
         }
-      } else if (!token) {
-        setUser(null);
-        setUserDetails(null);
+      } else {
+        // Fallback to localStorage
+        const token = localStorage.getItem('access_token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (token && storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            // Fetch user details
+            try {
+              const response = await userAPI.getCurrentUser();
+              setUserDetails(response.data);
+            } catch (err) {
+              console.error('Failed to fetch user details:', err);
+            }
+          } catch (e) {
+            console.error('Failed to parse stored user:', e);
+            // Clear invalid data
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setUserDetails(null);
+          }
+        } else {
+          setUser(null);
+          setUserDetails(null);
+        }
       }
     };
 
     checkUser();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       setUser(session?.user ?? null);
       if (session?.user) {
         // Refetch user details on auth change
-        userAPI.getCurrentUser().then(res => setUserDetails(res.data)).catch(console.error);
+        userAPI.getCurrentUser()
+          .then(res => setUserDetails(res.data))
+          .catch(console.error);
       } else {
         setUserDetails(null);
       }
@@ -109,11 +117,11 @@ function Navbar() {
                       className="user-tier-badge"
                       style={{ backgroundColor: getTierBadgeColor(userDetails.subscription_tier) }}
                     >
-                      {userDetails.subscription_tier.toUpperCase()}
+                      {userDetails.subscription_tier}
                     </span>
                   )}
                 </div>
-                <span className="dropdown-arrow">▾</span>
+                <span className="dropdown-arrow">▼</span>
                 {showDropdown && (
                   <div className="navbar-dropdown">
                     <div className="dropdown-header">
