@@ -33,10 +33,20 @@ function DashboardPage() {
   });
   const [recentVideos, setRecentVideos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showLoginMessage, setShowLoginMessage] = useState(location.state?.loginSuccess || false);
+  const loginMessage = location.state?.message;
 
   useEffect(() => {
     fetchRecentVideos();
-  }, []);
+    
+    // Auto-dismiss login message after 5 seconds
+    if (showLoginMessage) {
+      const timer = setTimeout(() => {
+        setShowLoginMessage(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLoginMessage]);
 
   const fetchRecentVideos = async () => {
     try {
@@ -48,19 +58,20 @@ function DashboardPage() {
   };
 
   const handleVideoProcessed = (result) => {
-    // Parse analysis if it's a JSON string
+    // Force parse analysis if it's a JSON string - try multiple times for safety
     if (result.analysis && typeof result.analysis === 'string') {
       try {
-        console.log('Parsing analysis string...');
+        console.log('🔧 [handleVideoProcessed] Parsing analysis string...');
         result.analysis = JSON.parse(result.analysis);
-        console.log('Parsed analysis:', result.analysis);
+        console.log('✅ [handleVideoProcessed] Parsed analysis:', result.analysis);
+        console.log('📊 Has fact_score?', result.analysis?.fact_score !== undefined);
       } catch (e) {
-        console.error('Failed to parse analysis JSON:', e);
-        console.log('Raw analysis:', result.analysis);
+        console.error('❌ [handleVideoProcessed] Failed to parse analysis JSON:', e);
+        console.log('📄 Raw analysis:', result.analysis);
       }
     } else {
-      console.log('Analysis type:', typeof result.analysis);
-      console.log('Analysis has fact_score?', result.analysis?.fact_score !== undefined);
+      console.log('✓ [handleVideoProcessed] Analysis type:', typeof result.analysis);
+      console.log('✓ Analysis has fact_score?', result.analysis?.fact_score !== undefined);
     }
     setVideoResult(result);
     fetchRecentVideos();
@@ -70,6 +81,12 @@ function DashboardPage() {
     <div className="dashboard-page">
       <div className="container">
         <h1 className="page-title">Welcome back!</h1>
+        
+        {showLoginMessage && loginMessage && (
+          <div className="message message-success" style={{ marginBottom: '24px' }}>
+            ✅ {loginMessage}
+          </div>
+        )}
         
         <UsageIndicator />
         
@@ -116,7 +133,7 @@ function DashboardPage() {
             )}
             
             {/* Check if analysis is structured JSON (fact-check) */}
-            {typeof videoResult.analysis === 'object' && videoResult.analysis.fact_score !== undefined ? (
+            {typeof videoResult.analysis === 'object' && videoResult.analysis?.fact_score !== undefined ? (
               // Render enhanced fact-check components
               <>
                 <FactCheckScore data={videoResult.analysis} />

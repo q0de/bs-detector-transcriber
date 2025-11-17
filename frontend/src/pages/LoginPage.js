@@ -30,8 +30,13 @@ function LoginPage() {
         refresh_token: response.data.session.refresh_token,
       });
       
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // Navigate to dashboard with success message
+      navigate('/dashboard', { 
+        state: { 
+          loginSuccess: true, 
+          message: `Welcome back, ${response.data.user.email}!` 
+        } 
+      });
     } catch (err) {
       console.error('Login failed:', err.message);
       setError(err.response?.data?.error || err.message || 'Login failed. Please try again.');
