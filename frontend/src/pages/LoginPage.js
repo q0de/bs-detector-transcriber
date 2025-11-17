@@ -24,6 +24,12 @@ function LoginPage() {
       localStorage.setItem('access_token', response.data.session.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
+      // Set Supabase session to trigger auth state change
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token,
+      });
+      
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
