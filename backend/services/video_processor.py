@@ -419,15 +419,18 @@ Transcription:
 {transcription}"""
             elif analysis_type == 'fact-check':
                 # Determine if transcript is short enough for Claude to add inline highlights
+                # Claude max_tokens: 8000 ≈ 32,000 chars max output
+                # Need space for: transcript + highlights (~+20%) + JSON structure (~2000 tokens)
+                # Safe limit: ~12,000 chars = ~3,000 tokens transcript + ~2,000 tokens JSON = ~5,000 tokens total
                 transcript_length = len(transcription)
-                include_highlights_instruction = transcript_length < 5000
+                include_highlights_instruction = transcript_length < 12000
                 
                 if include_highlights_instruction:
                     highlights_instruction = '"full_transcript_with_highlights": "<the full transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted before each claim>"'
-                    print(f"📝 Short transcript ({transcript_length} chars) - asking Claude to add highlights")
+                    print(f"📝 Short transcript ({transcript_length} chars) - asking Claude to add highlights", flush=True)
                 else:
                     highlights_instruction = '"full_transcript_with_highlights": "<OPTIONAL - omit this field for long transcripts>"'
-                    print(f"📝 Long transcript ({transcript_length} chars) - will use auto-highlighting instead")
+                    print(f"📝 Long transcript ({transcript_length} chars) - will use auto-highlighting instead", flush=True)
                 
                 prompt = f"""Please fact-check the following video transcription and return your analysis as a JSON object.
 
