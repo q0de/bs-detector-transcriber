@@ -242,6 +242,15 @@ def process_video():
         
         remaining = max(0, limit - new_used)
         
+        # Parse analysis if it's a JSON string (from database TEXT column)
+        analysis = result['analysis']
+        if isinstance(analysis, str) and analysis_type == 'fact-check':
+            try:
+                analysis = json.loads(analysis)
+                print("✅ Parsed analysis string to object for response")
+            except:
+                print("⚠️ Analysis is plain text (probably from summarize mode)")
+        
         response_data = {
             'success': True,
             'video_id': video_id,
@@ -252,7 +261,7 @@ def process_video():
             'minutes_charged': actual_minutes,
             'minute_multiplier': multiplier,
             'transcription': result['transcription'],
-            'analysis': result['analysis'],
+            'analysis': analysis,  # Now guaranteed to be object for fact-check, string for summarize
             'minutes_remaining': remaining
         }
         
@@ -373,6 +382,15 @@ def get_video(video_id):
         
         video = response.data[0]
         
+        # Parse analysis if it's a JSON string (from database TEXT column)
+        analysis = video.get('analysis', '')
+        if isinstance(analysis, str) and video.get('analysis_type') == 'fact-check' and analysis:
+            try:
+                analysis = json.loads(analysis)
+                print("✅ Parsed analysis string to object for get_video response")
+            except:
+                print("⚠️ Analysis is plain text or invalid JSON")
+        
         return jsonify({
             'id': video['id'],
             'video_url': video['video_url'],
@@ -381,7 +399,7 @@ def get_video(video_id):
             'duration_minutes': float(video.get('duration_minutes', 0)),
             'minutes_charged': int(video.get('minutes_charged', 0)),
             'transcription': video.get('transcription', ''),
-            'analysis': video.get('analysis', ''),
+            'analysis': analysis,  # Now guaranteed to be object for fact-check, string for summarize
             'analysis_type': video.get('analysis_type', 'summarize'),
             'created_at': video.get('created_at'),
             'completed_at': video.get('completed_at')

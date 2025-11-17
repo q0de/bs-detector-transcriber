@@ -14,11 +14,11 @@ function PricingPage() {
       name: 'Free',
       monthlyPrice: 0,
       yearlyPrice: 0,
-      minutes: 40,
+      minutes: 60,
       features: [
         'Video transcription',
         'AI Summarization only',
-        'Standard processing',
+        '2-3 fact-checks/month',
         'No history saved',
         'Community support'
       ],
