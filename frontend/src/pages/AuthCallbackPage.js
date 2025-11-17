@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import './AuthCallbackPage.css';
 
+// Updated: 2025-11-17 - Fixed OAuth callback
 function AuthCallbackPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('processing');
@@ -11,45 +12,94 @@ function AuthCallbackPage() {
   useEffect(() => {
     const handleOAuthCallback = async () => {
       try {
-        // Get the session from the URL hash
+        console.log('🔄 Starting OAuth callback handling...');
+        console.log('📍 Current URL:', window.location.href);
+        
+        // IMPORTANT: For OAuth, we need to check the URL hash for the session
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        console.log('🔑 Hash params - access_token exists?', !!accessToken);
+        console.log('🔑 Hash params - refresh_token exists?', !!refreshToken);
+
+        if (accessToken) {
+          // Set the session from hash params
+          const { data: sessionData, error: setError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || accessToken,
+          });
+
+          if (setError) {
+            console.error('❌ Error setting session:', setError);
+            setStatus('error');
+            setErrorMessage(setError.message || 'Failed to establish session');
+            return;
+          }
+
+          if (sessionData.session) {
+            console.log('✅ OAuth session established:', sessionData.session.user.email);
+            
+            // Store session in localStorage for backend API calls
+            localStorage.setItem('access_token', sessionData.session.access_token);
+            localStorage.setItem('user', JSON.stringify(sessionData.session.user));
+
+            // Check if this is a new user (created_at is recent)
+            const isNewUser = new Date(sessionData.session.user.created_at).getTime() > Date.now() - 10000;
+
+            // Navigate to dashboard with success message
+            setStatus('success');
+            console.log('✅ Navigating to dashboard...');
+            setTimeout(() => {
+              navigate('/dashboard', {
+                state: {
+                  loginSuccess: true,
+                  message: isNewUser 
+                    ? `🎉 Welcome! You have 60 free minutes to get started.`
+                    : `Welcome back, ${sessionData.session.user.email}!`,
+                }
+              });
+            }, 500);
+            return;
+          }
+        }
+
+        // Fallback: Try getting existing session
+        console.log('⚠️ No access token in URL hash, trying getSession...');
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('OAuth callback error:', error);
+          console.error('❌ OAuth callback error:', error);
           setStatus('error');
           setErrorMessage(error.message || 'Authentication failed');
           return;
         }
 
         if (data.session) {
-          console.log('✅ OAuth session established:', data.session.user.email);
+          console.log('✅ Found existing session:', data.session.user.email);
           
           // Store session in localStorage for backend API calls
           localStorage.setItem('access_token', data.session.access_token);
           localStorage.setItem('user', JSON.stringify(data.session.user));
 
-          // Check if this is a new user (created_at is recent)
-          const isNewUser = new Date(data.session.user.created_at).getTime() > Date.now() - 5000;
-
-          // Navigate to dashboard with success message
+          // Navigate to dashboard
           setStatus('success');
           setTimeout(() => {
             navigate('/dashboard', {
               state: {
                 loginSuccess: true,
-                message: isNewUser 
-                  ? `🎉 Welcome! You have 60 free minutes to get started.`
-                  : `Welcome back, ${data.session.user.email}!`,
+                message: `Welcome back, ${data.session.user.email}!`,
               }
             });
-          }, 1000);
+          }, 500);
         } else {
           // No session found - might be an error
+          console.error('❌ No session found anywhere');
           setStatus('error');
           setErrorMessage('No session found. Please try signing in again.');
         }
       } catch (err) {
-        console.error('Unexpected error in OAuth callback:', err);
+        console.error('❌ Unexpected error in OAuth callback:', err);
         setStatus('error');
         setErrorMessage('An unexpected error occurred. Please try again.');
       }
