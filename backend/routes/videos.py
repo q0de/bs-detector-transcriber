@@ -177,7 +177,6 @@ def process_video():
                         elif isinstance(result['analysis'], str):
                             # Try to parse JSON from string
                             try:
-                                import json
                                 analysis_obj = json.loads(result['analysis'])
                                 fact_score = analysis_obj.get('fact_score')
                             except:
@@ -213,12 +212,25 @@ def process_video():
                 analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=False)
                 print("✅ Converted analysis dict to JSON string for storage")
             except Exception as e:
-                print(f"⚠️ Failed to serialize analysis to JSON: {e}")
-                # Fall back to string representation
-                analysis_to_store = str(analysis_to_store)
+                print(f"❌ CRITICAL: Failed to serialize analysis to JSON: {e}")
+                import traceback
+                traceback.print_exc()
+                # Try with ascii encoding as last resort
+                try:
+                    analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=True)
+                    print("✅ Fallback: Converted with ensure_ascii=True")
+                except Exception as e2:
+                    print(f"❌ CRITICAL: All JSON serialization attempts failed: {e2}")
+                    # This should never happen with valid Python dicts, but if it does, fail gracefully
+                    raise Exception(f"Cannot serialize analysis to JSON: {e2}")
         elif not isinstance(analysis_to_store, str):
-            # Convert to string if it's not already
-            analysis_to_store = str(analysis_to_store)
+            # This shouldn't happen, but handle it properly if it does
+            try:
+                analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=False)
+                print("✅ Converted non-dict/non-string analysis to JSON")
+            except:
+                # If it's truly not JSON-serializable, there's a bigger problem
+                raise Exception(f"Analysis is not JSON-serializable: {type(analysis_to_store)}")
         
         # Save to database
         video_data = {

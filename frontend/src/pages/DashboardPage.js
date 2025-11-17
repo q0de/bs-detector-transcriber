@@ -34,6 +34,7 @@ function DashboardPage() {
   const [recentVideos, setRecentVideos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showLoginMessage, setShowLoginMessage] = useState(location.state?.loginSuccess || false);
+  const [showHistoryMessage, setShowHistoryMessage] = useState(location.state?.fromHistory || false);
   const loginMessage = location.state?.message;
 
   useEffect(() => {
@@ -46,7 +47,15 @@ function DashboardPage() {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [showLoginMessage]);
+    
+    // Auto-dismiss history message after 3 seconds
+    if (showHistoryMessage) {
+      const timer = setTimeout(() => {
+        setShowHistoryMessage(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLoginMessage, showHistoryMessage]);
 
   // Ensure analysis is parsed if it's a JSON string (backup parsing)
   useEffect(() => {
@@ -105,6 +114,12 @@ function DashboardPage() {
           </div>
         )}
         
+        {showHistoryMessage && videoResult && (
+          <div className="message message-info" style={{ marginBottom: '24px', background: '#e3f2fd', border: '1px solid #2196f3', color: '#1565c0' }}>
+            📚 Loaded from history: <strong>{videoResult.title || 'Video'}</strong>
+          </div>
+        )}
+
         <UsageIndicator />
         
         <div className="dashboard-section">
@@ -242,6 +257,8 @@ function DashboardPage() {
               
               if (isFactCheck && typeof analysis === 'object' && analysis !== null) {
                 console.log('✅ [Render] Rendering fact-check UI components');
+                console.log('🔍 [DashboardPage] videoResult.id:', videoResult.id);
+                console.log('🔍 [DashboardPage] videoResult:', videoResult);
                 // Render enhanced fact-check components
                 return (
                   <>

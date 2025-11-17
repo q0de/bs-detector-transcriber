@@ -11,6 +11,7 @@ function VideoProcessor({ onProcessed }) {
   const [analysisType, setAnalysisType] = useState('summarize');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [insufficientCredits, setInsufficientCredits] = useState(null);
   const [estimatedMinutes, setEstimatedMinutes] = useState(null);
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [processingStatus, setProcessingStatus] = useState('');
@@ -86,6 +87,7 @@ function VideoProcessor({ onProcessed }) {
 
     setLoading(true);
     setError('');
+    setInsufficientCredits(null);
     setProcessingStatus('Fetching video info...');
 
     try {
@@ -131,7 +133,16 @@ function VideoProcessor({ onProcessed }) {
         navigate('/dashboard', { state: { videoResult: response.data } });
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to process video. Please try again.');
+      // Check if this is an insufficient credits error
+      if (err.response?.status === 403 && err.response?.data?.upgrade_required) {
+        setInsufficientCredits({
+          used: err.response.data.used,
+          limit: err.response.data.limit,
+          currentTier: err.response.data.current_tier
+        });
+      } else {
+        setError(err.response?.data?.error || 'Failed to process video. Please try again.');
+      }
       setProcessingStatus('');
     } finally {
       setLoading(false);
@@ -263,6 +274,37 @@ function VideoProcessor({ onProcessed }) {
         
         {error && (
           <div className="message message-error">{error}</div>
+        )}
+        
+        {insufficientCredits && (
+          <div className="insufficient-credits-notice">
+            <div className="notice-header">
+              <span className="notice-icon">⚠️</span>
+              <h3>Insufficient Credits</h3>
+            </div>
+            <div className="notice-body">
+              <p className="notice-message">
+                You've used <strong>{Math.round(insufficientCredits.used)}</strong> out of <strong>{insufficientCredits.limit}</strong> minutes this month.
+              </p>
+              <p className="notice-submessage">
+                Upgrade your plan to get more credits and continue analyzing videos.
+              </p>
+              <div className="notice-actions">
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => navigate('/pricing')}
+                >
+                  View Plans & Upgrade
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setInsufficientCredits(null)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         
         {loading && videoMetadata && (

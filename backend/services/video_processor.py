@@ -181,6 +181,9 @@ class VideoProcessor:
     
     def deep_recheck_claim(self, claim, timestamp, context, original_verdict):
         """Perform deep fact-check on a single claim flagged by user"""
+        import json
+        import re
+        
         try:
             print(f"🔍 Deep re-checking claim: {claim[:100]}...")
             
@@ -201,9 +204,10 @@ RELEVANT CONTEXT FROM VIDEO:
 
 Your task:
 1. Verify if this claim is factually accurate
-2. Check for name misspellings (e.g., "Boowbert" should be "Boebert")  
+2. Check for ALL types of errors: names, numbers, dates, titles, context, qualifiers
 3. Find at least 3 reliable sources
 4. Determine if the original verdict was correct
+5. Document ANY corrections or clarifications needed
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {{
@@ -211,27 +215,86 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "explanation": "Detailed explanation of why this verdict is correct",
   "sources": ["url1", "url2", "url3"],
   "confidence": "High | Medium | Low",
-  "correction_notes": "Any corrections made (e.g., name spellings fixed, additional context found)"
-}}"""
+  "correction_notes": "List ALL corrections found. Be specific about WHAT was wrong and HOW it was corrected."
+}}
 
-            message = self.anthropic_client.messages.create(
-                model="claude-3-5-sonnet-20240620",  # Use Sonnet for accuracy
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
-            )
+IMPORTANT: In correction_notes, document specific corrections:
+- Name spellings: "Boowbert → Boebert"  
+- Numbers: "Video said 100K, actually 127K per source"
+- Dates: "Stated 2020, actually 2021"
+- Titles: "Called 'Senator', actually 'Representative'"
+- Context: "Missing qualifier: only applies to federal workers"
+- Clarifications: "Claim technically true but lacks important context about X"
+- If NO corrections: "No corrections needed - claim is accurate as stated"
+
+Be thorough and specific in your correction notes!"""
+
+            # Try multiple models with fallback (same as analyze_with_claude)
+            models_to_try = [
+                "claude-3-opus-20240229",      # Claude 3 Opus (most capable)
+                "claude-3-sonnet-20240229",    # Claude 3 Sonnet  
+                "claude-3-haiku-20240307",     # Claude 3 Haiku (fastest)
+            ]
+            
+            message = None
+            last_error = None
+            
+            for model_name in models_to_try:
+                try:
+                    print(f"🔍 Trying model for re-check: {model_name}")
+                    message = self.anthropic_client.messages.create(
+                        model=model_name,
+                        max_tokens=2000,
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    print(f"✅ Re-check succeeded with model: {model_name}")
+                    break
+                except Exception as e:
+                    last_error = e
+                    print(f"❌ Model {model_name} failed: {str(e)}")
+                    continue
+            
+            if not message:
+                raise Exception(f"All models failed for re-check. Last error: {str(last_error)}")
             
             response_text = message.content[0].text.strip()
             
-            # Parse JSON response
-            import json
-            import re
+            # Parse JSON response with robust error handling
+            print(f"📝 Raw response length: {len(response_text)} characters")
+            print(f"📝 First 200 chars: {response_text[:200]}")
             
-            # Remove markdown if present
+            # Remove markdown code blocks if present
             if response_text.startswith('```'):
                 response_text = re.sub(r'^```(?:json)?\s*\n', '', response_text)
                 response_text = re.sub(r'\n```\s*$', '', response_text)
+                print("✂️ Removed markdown code blocks")
             
-            result = json.loads(response_text)
+            # Try to extract JSON if embedded in text
+            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            if json_match:
+                response_text = json_match.group(0)
+                print("✂️ Extracted JSON from text")
+            
+            # Fix common JSON issues
+            # Replace single quotes with double quotes (but not in content)
+            # Replace smart quotes
+            response_text = response_text.replace('"', '"').replace('"', '"')
+            response_text = response_text.replace("'", "'").replace("'", "'")
+            
+            print(f"📝 Cleaned JSON (first 200 chars): {response_text[:200]}")
+            
+            try:
+                result = json.loads(response_text)
+                print("✅ JSON parsed successfully")
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON parse error: {str(e)}")
+                print(f"❌ Error at position {e.pos}: {response_text[max(0, e.pos-50):e.pos+50]}")
+                # Try more aggressive cleaning
+                # Remove trailing commas
+                response_text = re.sub(r',\s*}', '}', response_text)
+                response_text = re.sub(r',\s*]', ']', response_text)
+                result = json.loads(response_text)
+                print("✅ JSON parsed after aggressive cleaning")
             
             # Add metadata
             result['recheckTimestamp'] = datetime.utcnow().isoformat()
@@ -241,6 +304,12 @@ Return ONLY valid JSON (no markdown, no code blocks):
             
             return result
             
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing failed completely: {str(e)}")
+            print(f"❌ Problematic JSON: {response_text}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"AI returned invalid JSON. This might be a complex claim. Error: {str(e)}")
         except Exception as e:
             print(f"❌ Re-check failed: {str(e)}")
             import traceback
@@ -352,7 +421,7 @@ Remember: Return ONLY the JSON object, no other text."""
             
             # Try different models in order of preference with their max_tokens limits
             models_to_try = [
-                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (stable)
+                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (June 2024 - stable)
                 ("claude-3-opus-20240229", 8000),       # Claude 3 Opus
                 ("claude-3-sonnet-20240229", 8000),     # Claude 3 Sonnet
                 ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (4K limit)

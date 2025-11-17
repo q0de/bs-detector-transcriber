@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { videoAPI } from '../services/api';
 import './HistoryPage.css';
 
 function HistoryPage() {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -10,6 +12,7 @@ function HistoryPage() {
   const [search, setSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [loadingVideoId, setLoadingVideoId] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -36,6 +39,30 @@ function HistoryPage() {
     }
   };
 
+  const handleViewResults = async (videoId) => {
+    setLoadingVideoId(videoId);
+    try {
+      console.log('🔍 Fetching full video details for:', videoId);
+      const response = await videoAPI.getVideo(videoId);
+      const videoData = response.data;
+      
+      console.log('✅ Video data loaded:', videoData);
+      
+      // Navigate to dashboard with the full video results
+      navigate('/dashboard', { 
+        state: { 
+          videoResult: videoData,
+          fromHistory: true 
+        } 
+      });
+    } catch (err) {
+      console.error('❌ Failed to load video results:', err);
+      alert('Failed to load video results. Please try again.');
+    } finally {
+      setLoadingVideoId(null);
+    }
+  };
+
   const handleDelete = async (videoId) => {
     if (!window.confirm('Are you sure you want to delete this video?')) {
       return;
@@ -46,6 +73,7 @@ function HistoryPage() {
       fetchVideos();
     } catch (err) {
       console.error('Failed to delete video:', err);
+      alert('Failed to delete video. Please try again.');
     }
   };
 
@@ -131,8 +159,12 @@ function HistoryPage() {
                     </p>
                   </div>
                   <div className="video-actions">
-                    <button onClick={() => window.location.href = `#${video.id}`}>
-                      View Results
+                    <button 
+                      className="btn-primary"
+                      onClick={() => handleViewResults(video.id)}
+                      disabled={loadingVideoId === video.id}
+                    >
+                      {loadingVideoId === video.id ? '⏳ Loading...' : '👁️ View Results'}
                     </button>
                     <div className="dropdown">
                       <button>Export ▼</button>
