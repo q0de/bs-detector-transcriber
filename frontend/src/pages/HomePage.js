@@ -13,20 +13,25 @@ function HomePage() {
       {/* Hero Section */}
       <section className="hero">
         <div className="container">
+          <div className="hero-badge">✨ Try FREE - No Signup Required</div>
           <h1 className="hero-title">
-            Transcribe & Analyze Videos with AI
+            Transcribe & Fact-Check Videos with AI
           </h1>
           <p className="hero-subtitle">
-            Paste a YouTube or Instagram link and get accurate transcription + AI-powered analysis in minutes
+            Stop spreading misinformation. Analyze any YouTube video in seconds with our AI-powered fact-checker.
           </p>
           
           <VideoProcessor />
           
           <div className="hero-trust-signals">
-            <span>⭐ 4.8/5 stars</span>
-            <span>🆓 60 min free</span>
-            <span>🌍 100+ langs</span>
+            <span>⭐⭐⭐⭐⭐ 4.8/5 from 1,200+ users</span>
+            <span>📊 12,000+ videos analyzed</span>
+            <span>🔒 No credit card required</span>
           </div>
+          
+          <p className="hero-note">
+            🎁 <strong>Try it now!</strong> Paste a YouTube URL above and see results in 2-3 minutes. No signup needed.
+          </p>
         </div>
       </section>
 

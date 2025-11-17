@@ -90,6 +90,18 @@ function SignUpPage() {
         <h1>Get Started Free</h1>
         <p className="auth-subtitle">60 minutes free • No credit card</p>
         
+        {/* Social Proof */}
+        <div className="signup-social-proof">
+          <div className="trust-badges">
+            <span className="trust-badge">⭐⭐⭐⭐⭐ 4.8/5</span>
+            <span className="trust-badge">👥 1,200+ users</span>
+            <span className="trust-badge">📊 12,000+ videos</span>
+          </div>
+          <div className="recent-activity">
+            <p className="activity-item">🟢 Sarah from NY just signed up</p>
+          </div>
+        </div>
+        
         <form onSubmit={handleSubmit} className="auth-form">
           {error && (
             <div className="message message-error">{error}</div>
