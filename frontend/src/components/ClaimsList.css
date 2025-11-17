@@ -245,26 +245,13 @@
   }
 }
 
-/* Action buttons in expanded state */
-.claim-details-actions {
+/* Report Error section - subtle, low hierarchy */
+.claim-report-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  flex-wrap: wrap;
-}
-
-.claim-details-actions button {
-  flex: 1;
-  min-width: 140px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid;
+  justify-content: flex-end;
 }
 
 .claim-explanation {
@@ -381,63 +368,69 @@
   }
 }
 
-/* Re-check Button Styling (now in expanded section) */
-.claim-details-actions .claim-recheck {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
+/* Re-check Button - In header (compact icon) */
+.claim-actions .claim-recheck {
+  padding: 6px 12px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
 
-.claim-details-actions .claim-recheck:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.claim-actions .claim-recheck:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: scale(1.1);
 }
 
-.claim-details-actions .claim-recheck.loading {
-  opacity: 0.7;
+.claim-actions .claim-recheck.loading {
+  opacity: 0.6;
   cursor: wait;
   animation: pulse 1.5s infinite;
 }
 
-.claim-details-actions .claim-recheck:disabled {
+.claim-actions .claim-recheck:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Report Error Button (now in expanded section) */
-.claim-details-actions .claim-report-error {
-  background: #fff3cd;
-  color: #856404;
-  border-color: #ffc107;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  white-space: nowrap;
+/* Report Error Button - Subtle, low hierarchy */
+.claim-report-section .claim-report-error {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.claim-details-actions .claim-report-error:hover:not(:disabled) {
-  background: #ffc107;
-  color: #333;
-  border-color: #ffc107;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+.claim-report-section .claim-report-error:hover:not(:disabled) {
+  background: #f9f9f9;
+  color: #666;
+  border-color: #ccc;
 }
 
-.claim-details-actions .claim-report-error.reported {
-  background: #4CAF50;
-  border-color: #4CAF50;
-  color: white;
+.claim-report-section .claim-report-error.reported {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+  color: #4CAF50;
   cursor: not-allowed;
 }
 
-.claim-details-actions .claim-report-error:disabled {
-  opacity: 0.7;
+.claim-report-section .claim-report-error:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
