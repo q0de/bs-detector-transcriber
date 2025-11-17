@@ -48,19 +48,22 @@ function DashboardPage() {
     }
   }, [showLoginMessage]);
 
-  // Ensure analysis is parsed if it's a JSON string
+  // Ensure analysis is parsed if it's a JSON string (backup parsing)
   useEffect(() => {
-    if (videoResult?.analysis && typeof videoResult.analysis === 'string') {
+    if (videoResult?.analysis && typeof videoResult.analysis === 'string' && videoResult.analysis.trim().startsWith('{')) {
       try {
         console.log('🔧 [useEffect] Parsing analysis string...');
         const parsed = JSON.parse(videoResult.analysis);
-        setVideoResult({ ...videoResult, analysis: parsed });
-        console.log('✅ [useEffect] Analysis parsed successfully');
+        // Only update if parsing succeeded and it's actually different
+        if (parsed && typeof parsed === 'object') {
+          setVideoResult(prev => ({ ...prev, analysis: parsed }));
+          console.log('✅ [useEffect] Analysis parsed successfully');
+        }
       } catch (e) {
         console.error('❌ [useEffect] Failed to parse analysis:', e);
       }
     }
-  }, [videoResult?.analysis]);
+  }, [videoResult?.id]); // Only run when video changes, not on every analysis change
 
   const fetchRecentVideos = async () => {
     try {
@@ -150,20 +153,37 @@ function DashboardPage() {
             {(() => {
               let analysis = videoResult.analysis;
               
+              console.log('🔍 [Render] Analysis type:', typeof analysis);
+              console.log('🔍 [Render] Analysis type (videoResult):', videoResult.analysis_type);
+              console.log('🔍 [Render] Analysis preview:', typeof analysis === 'string' ? analysis.substring(0, 100) : 'object');
+              
               // Parse if it's a JSON string
               if (typeof analysis === 'string') {
                 try {
                   analysis = JSON.parse(analysis);
+                  console.log('✅ [Render] Parsed analysis successfully');
+                  console.log('✅ [Render] Has fact_score?', analysis?.fact_score !== undefined);
                 } catch (e) {
-                  console.error('Failed to parse analysis:', e);
+                  console.error('❌ [Render] Failed to parse analysis:', e);
                 }
               }
               
-              // Check if it's a fact-check (has fact_score OR analysis_type is fact-check)
-              const isFactCheck = videoResult.analysis_type === 'fact-check' || 
-                                  (typeof analysis === 'object' && analysis?.fact_score !== undefined);
+              // Check if it's a fact-check (multiple indicators)
+              const hasFactScore = typeof analysis === 'object' && analysis?.fact_score !== undefined;
+              const hasVerifiedClaims = typeof analysis === 'object' && Array.isArray(analysis?.verified_claims);
+              const isFactCheckType = videoResult.analysis_type === 'fact-check';
+              // If it has fact_score OR verified_claims OR analysis_type is fact-check, it's a fact-check
+              const isFactCheck = isFactCheckType || hasFactScore || hasVerifiedClaims;
               
-              if (isFactCheck && typeof analysis === 'object') {
+              console.log('🔍 [Render] isFactCheckType:', isFactCheckType);
+              console.log('🔍 [Render] hasFactScore:', hasFactScore);
+              console.log('🔍 [Render] hasVerifiedClaims:', hasVerifiedClaims);
+              console.log('🔍 [Render] isFactCheck:', isFactCheck);
+              console.log('🔍 [Render] analysis is object?', typeof analysis === 'object');
+              console.log('🔍 [Render] analysis keys:', typeof analysis === 'object' ? Object.keys(analysis || {}) : 'not object');
+              
+              if (isFactCheck && typeof analysis === 'object' && analysis !== null) {
+                console.log('✅ [Render] Rendering fact-check UI components');
                 // Render enhanced fact-check components
                 return (
                   <>
@@ -190,6 +210,30 @@ function DashboardPage() {
                   </>
                 );
               } else {
+                // Double-check: if analysis has fact_score OR verified_claims, it MUST be fact-check
+                if (typeof analysis === 'object' && analysis !== null && 
+                    (analysis.fact_score !== undefined || Array.isArray(analysis.verified_claims))) {
+                  console.warn('⚠️ [Render] Analysis has fact-check indicators but fell into else block - forcing fact-check render');
+                  return (
+                    <>
+                      <FactCheckScore data={analysis} />
+                      <ShareButton videoResult={videoResult} />
+                      {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
+                      <ClaimsList data={analysis} videoId={videoResult.id} />
+                      <BiasScale data={analysis} />
+                      <InteractiveTranscript 
+                        transcript={videoResult.transcription}
+                        highlightedTranscript={analysis.full_transcript_with_highlights}
+                      />
+                      <BadgeEmbed 
+                        videoId={videoResult.id}
+                        creatorId={videoResult.creator?.id}
+                      />
+                    </>
+                  );
+                }
+                
+                console.log('📝 [Render] Rendering summarize format (plain text)');
                 // Render plain text format (summarize)
                 return (
                   <>
