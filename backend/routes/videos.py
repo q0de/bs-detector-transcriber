@@ -18,7 +18,9 @@ def get_video_processor():
 def process_video():
     """Process video from URL"""
     try:
-        print("=== VIDEO PROCESS: Starting ===")
+        print("\n" + "="*80)
+        print("🎬 VIDEO PROCESS: STARTING")
+        print("="*80)
         data = request.get_json()
         video_url = data.get('url')
         analysis_type = data.get('analysis_type', 'summarize')

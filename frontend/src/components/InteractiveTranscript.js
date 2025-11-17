@@ -7,8 +7,22 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
   
   if (!transcript && !highlightedTranscript) return null;
   
-  // Use highlighted transcript if available, otherwise use plain transcript
-  const displayText = (showHighlights && highlightedTranscript) 
+  // Check if highlighted transcript is just a placeholder message or doesn't have actual tags
+  const hasRealHighlights = highlightedTranscript && (
+    highlightedTranscript.includes('[VERIFIED]') ||
+    highlightedTranscript.includes('[OPINION]') ||
+    highlightedTranscript.includes('[UNCERTAIN]') ||
+    highlightedTranscript.includes('[FALSE]')
+  );
+  
+  const isPlaceholder = highlightedTranscript && !hasRealHighlights && (
+    highlightedTranscript.includes('[Transcript with highlights not included') ||
+    highlightedTranscript.includes('OPTIONAL:') ||
+    highlightedTranscript.length < 50
+  );
+  
+  // Use highlighted transcript if it has real highlight tags, otherwise use plain transcript
+  const displayText = (showHighlights && hasRealHighlights) 
     ? highlightedTranscript 
     : transcript;
   
@@ -54,7 +68,8 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
           <button 
             className={`control-btn ${showHighlights ? 'active' : ''}`}
             onClick={() => setShowHighlights(!showHighlights)}
-            disabled={!highlightedTranscript}
+            disabled={!hasRealHighlights}
+            title={!hasRealHighlights ? 'Highlights not available for this video' : 'Toggle claim highlights in transcript'}
           >
             {showHighlights ? '🎨 Highlights: ON' : '🎨 Highlights: OFF'}
           </button>
@@ -68,7 +83,7 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
         </div>
       </div>
       
-      {showHighlights && highlightedTranscript && (
+      {showHighlights && hasRealHighlights && (
         <div className="transcript-legend">
           <span className="legend-item">
             <span className="legend-badge verified">✅</span> Verified

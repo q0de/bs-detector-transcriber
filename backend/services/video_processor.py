@@ -13,6 +13,71 @@ class VideoProcessor:
         self.whisper_module = None
         self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
     
+    def auto_highlight_transcript(self, transcript, analysis):
+        """Automatically add highlight tags to transcript based on claims"""
+        if not transcript or not isinstance(analysis, dict):
+            return transcript
+        
+        print("🎨 Auto-highlighting transcript based on claims...")
+        
+        # Collect all claims with their verdicts
+        claims_with_tags = []
+        
+        for claim_type, tag in [
+            ('verified_claims', '[VERIFIED]'),
+            ('opinion_claims', '[OPINION]'),
+            ('opinion_based_claims', '[OPINION]'),  # Handle both variations
+            ('uncertain_claims', '[UNCERTAIN]'),
+            ('false_claims', '[FALSE]')
+        ]:
+            claims_list = analysis.get(claim_type, [])
+            if claims_list:
+                for claim_obj in claims_list:
+                    claim_text = claim_obj.get('claim', '').strip()
+                    if claim_text and len(claim_text) > 10:  # Only process meaningful claims
+                        claims_with_tags.append((claim_text, tag))
+        
+        if not claims_with_tags:
+            print("⚠️ No claims found to highlight")
+            return transcript
+        
+        # Sort claims by length (longest first) to avoid partial matches
+        claims_with_tags.sort(key=lambda x: len(x[0]), reverse=True)
+        
+        highlighted = transcript
+        highlights_added = 0
+        
+        # Add tags before each claim in the transcript
+        for claim_text, tag in claims_with_tags:
+            # Try to find the claim (case-insensitive, flexible whitespace)
+            # Normalize whitespace in both claim and transcript
+            normalized_claim = ' '.join(claim_text.split())
+            
+            # Search for the claim in the transcript
+            import re
+            # Create a pattern that's flexible with whitespace
+            pattern = re.escape(normalized_claim)
+            pattern = pattern.replace(r'\ ', r'\s+')  # Allow flexible whitespace
+            
+            # Find all matches
+            matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
+            
+            if matches:
+                # Replace from end to start to preserve positions
+                for match in reversed(matches):
+                    # Insert tag before the claim
+                    start = match.start()
+                    highlighted = highlighted[:start] + tag + ' ' + highlighted[start:]
+                    highlights_added += 1
+                    print(f"  ✅ Added {tag} at position {start}")
+        
+        if highlights_added > 0:
+            print(f"✅ Added {highlights_added} highlights to transcript")
+        else:
+            print("⚠️ Could not find any claims in transcript to highlight")
+        
+        return highlighted
+    
     def extract_video_id(self, url):
         """Extract YouTube video ID from URL"""
         patterns = [
@@ -231,9 +296,9 @@ Be thorough and specific in your correction notes!"""
 
             # Try multiple models with fallback (same as analyze_with_claude)
             models_to_try = [
-                "claude-3-opus-20240229",      # Claude 3 Opus (most capable)
-                "claude-3-sonnet-20240229",    # Claude 3 Sonnet  
-                "claude-3-haiku-20240307",     # Claude 3 Haiku (fastest)
+                "claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet v2 (Oct 2024)
+                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024)
+                "claude-3-haiku-20240307",     # Claude 3 Haiku (fallback)
             ]
             
             message = None
@@ -394,7 +459,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
     "overall_bias": "<Low | Moderate | High>"
   }},
   "red_flags": ["<any concerning patterns, logical fallacies, or manipulation tactics>"],
-  "full_transcript_with_highlights": "<transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inline>"
+  "full_transcript_with_highlights": "<OPTIONAL: Only include if transcript is short (<5000 chars). Otherwise omit this field entirely.>"
 }}
 
 CLAIM CATEGORIES:
@@ -421,10 +486,9 @@ Remember: Return ONLY the JSON object, no other text."""
             
             # Try different models in order of preference with their max_tokens limits
             models_to_try = [
-                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (June 2024 - stable)
-                ("claude-3-opus-20240229", 8000),       # Claude 3 Opus
-                ("claude-3-sonnet-20240229", 8000),     # Claude 3 Sonnet
-                ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (4K limit)
+                ("claude-3-5-sonnet-20241022", 8000),   # Claude 3.5 Sonnet v2 (Oct 2024)
+                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024)
+                ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (fallback)
             ]
             
             message = None
@@ -475,6 +539,12 @@ Remember: Return ONLY the JSON object, no other text."""
                     
                     parsed = json.loads(cleaned)
                     print(f"✅ Successfully parsed JSON fact-check response")
+                    
+                    # Normalize Claude's response: Sometimes it uses "opinion_based_claims" instead of "opinion_claims"
+                    if 'opinion_based_claims' in parsed and 'opinion_claims' not in parsed:
+                        print("🔧 Normalizing: Converting 'opinion_based_claims' to 'opinion_claims'")
+                        parsed['opinion_claims'] = parsed.pop('opinion_based_claims')
+                    
                     return parsed  # Return as dict/object, not string
                 except json.JSONDecodeError as e:
                     print(f"⚠️ Failed to parse JSON (will return raw text): {str(e)}")
@@ -613,6 +683,17 @@ Remember: Return ONLY the JSON object, no other text."""
         print("🤖 Analyzing with Claude AI...")
         analysis = self.analyze_with_claude(transcription, analysis_type)
         print("✅ Analysis complete!")
+        
+        # For fact-checks, auto-generate highlighted transcript
+        highlighted_transcript = None
+        if analysis_type == 'fact-check' and isinstance(analysis, dict):
+            highlighted_transcript = self.auto_highlight_transcript(transcription, analysis)
+            # Add to analysis dict
+            if highlighted_transcript and highlighted_transcript != transcription:
+                analysis['full_transcript_with_highlights'] = highlighted_transcript
+                print("✅ Highlighted transcript added to analysis")
+            else:
+                print("⚠️ No highlights added to transcript")
         
         return {
             'title': title,
