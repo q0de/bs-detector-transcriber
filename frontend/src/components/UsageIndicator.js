@@ -6,20 +6,40 @@ import './UsageIndicator.css';
 function UsageIndicator() {
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsage();
+    
+    // Listen for custom event when video is processed
+    const handleUsageUpdate = () => {
+      fetchUsage();
+    };
+    
+    window.addEventListener('usageUpdated', handleUsageUpdate);
+    
+    // Cleanup event listener on unmount
+    return () => window.removeEventListener('usageUpdated', handleUsageUpdate);
   }, []);
 
   const fetchUsage = async () => {
     try {
+      // Only show updating state if not initial load
+      if (!loading) {
+        setUpdating(true);
+      }
+      
       const response = await userAPI.getUsage();
       setUsage(response.data);
+      setLoading(false);
+      
+      // Brief delay to show update animation
+      setTimeout(() => setUpdating(false), 300);
     } catch (err) {
       console.error('Failed to fetch usage:', err);
-    } finally {
       setLoading(false);
+      setUpdating(false);
     }
   };
 

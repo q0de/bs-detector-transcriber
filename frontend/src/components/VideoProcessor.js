@@ -122,6 +122,11 @@ function VideoProcessor({ onProcessed }) {
         onProcessed(response.data);
       }
       
+      // Trigger usage update for authenticated users
+      if (!isAnonymous) {
+        window.dispatchEvent(new Event('usageUpdated'));
+      }
+      
       // Redirect to results with signup prompt for anonymous users
       if (isAnonymous) {
         navigate('/free-trial-result', { state: { 
