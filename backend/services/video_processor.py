@@ -586,9 +586,41 @@ Remember: Return ONLY the JSON object, no other text."""
                     
                     return parsed  # Return as dict/object, not string
                 except json.JSONDecodeError as e:
-                    print(f"⚠️ Failed to parse JSON (will return raw text): {str(e)}")
-                    # Fall back to returning raw text
-                    return analysis
+                    print(f"⚠️ Initial JSON parse failed: {str(e)}")
+                    print("🔧 Attempting to repair JSON...")
+                    
+                    # Try to repair common JSON issues
+                    try:
+                        # Remove markdown code blocks if still present
+                        repaired = cleaned
+                        if '```' in repaired:
+                            repaired = re.sub(r'```[a-z]*\n?', '', repaired)
+                            repaired = re.sub(r'\n?```', '', repaired)
+                        
+                        # Try to extract JSON object if embedded in text
+                        json_match = re.search(r'\{[\s\S]*\}', repaired)
+                        if json_match:
+                            repaired = json_match.group(0)
+                        
+                        # Fix common issues: smart quotes, trailing commas
+                        repaired = repaired.replace('"', '"').replace('"', '"')  # Smart quotes
+                        repaired = repaired.replace(''', "'").replace(''', "'")  # Smart apostrophes
+                        repaired = re.sub(r',(\s*[}\]])', r'\1', repaired)  # Trailing commas
+                        
+                        parsed = json.loads(repaired)
+                        print(f"✅ Successfully repaired and parsed JSON")
+                        
+                        # Normalize Claude's response
+                        if 'opinion_based_claims' in parsed and 'opinion_claims' not in parsed:
+                            print("🔧 Normalizing: Converting 'opinion_based_claims' to 'opinion_claims'")
+                            parsed['opinion_claims'] = parsed.pop('opinion_based_claims')
+                        
+                        return parsed
+                    except Exception as e2:
+                        print(f"❌ JSON repair failed: {str(e2)}")
+                        print("⚠️ Returning raw text - analysis may be incomplete")
+                        # Fall back to returning raw text
+                        return analysis
             
             return analysis
         except Exception as e:
