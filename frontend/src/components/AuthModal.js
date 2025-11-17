@@ -4,7 +4,7 @@ import { authAPI } from '../services/api';
 import { supabase } from '../services/supabase';
 import './AuthModal.css';
 
-function AuthModal({ isOpen, onClose }) {
+function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState('signup'); // 'signup' or 'login'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +14,16 @@ function AuthModal({ isOpen, onClose }) {
   const navigate = useNavigate();
 
   if (!isOpen) return null;
+  
+  // Trigger auth success event for navbar refresh
+  const triggerAuthSuccess = () => {
+    // Dispatch custom event for navbar to listen
+    window.dispatchEvent(new CustomEvent('authSuccess'));
+    // Also call callback if provided
+    if (onAuthSuccess) {
+      onAuthSuccess();
+    }
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -36,10 +46,23 @@ function AuthModal({ isOpen, onClose }) {
       const loginResponse = await authAPI.login(email, password);
       localStorage.setItem('access_token', loginResponse.data.access_token);
       
-      await supabase.auth.setSession({
+      // Store user info for navbar
+      if (loginResponse.data.user) {
+        localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+      }
+      
+      // Set Supabase session
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: loginResponse.data.access_token,
         refresh_token: loginResponse.data.refresh_token || loginResponse.data.access_token
       });
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+      
+      // Trigger navbar refresh
+      triggerAuthSuccess();
       
       onClose();
       navigate('/dashboard', {
@@ -64,10 +87,23 @@ function AuthModal({ isOpen, onClose }) {
       const response = await authAPI.login(email, password);
       localStorage.setItem('access_token', response.data.access_token);
       
-      await supabase.auth.setSession({
+      // Store user info for navbar
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      // Set Supabase session
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: response.data.access_token,
         refresh_token: response.data.refresh_token || response.data.access_token
       });
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+      
+      // Trigger navbar refresh
+      triggerAuthSuccess();
       
       onClose();
       navigate('/dashboard', {

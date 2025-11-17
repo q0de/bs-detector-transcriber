@@ -11,8 +11,8 @@ function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [navbarVariant, setNavbarVariant] = useState(() => {
-    // Load from localStorage or default to 'option1'
-    return localStorage.getItem('navbarVariant') || 'option1';
+    // Load from localStorage or default to 'option6' (Hybrid - best of both worlds)
+    return localStorage.getItem('navbarVariant') || 'option6';
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,6 +83,42 @@ function Navbar() {
     };
 
     checkUser();
+    
+    // Listen for custom authSuccess event (from modal)
+    const handleAuthSuccess = async () => {
+      console.log('🔄 Auth success event received - refreshing navbar state');
+      // Re-check user state
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        try {
+          const response = await userAPI.getCurrentUser();
+          setUserDetails(response.data);
+        } catch (err) {
+          console.error('Failed to fetch user details:', err);
+        }
+      } else {
+        // Fallback to localStorage
+        const token = localStorage.getItem('access_token');
+        const storedUser = localStorage.getItem('user');
+        if (token && storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            try {
+              const response = await userAPI.getCurrentUser();
+              setUserDetails(response.data);
+            } catch (err) {
+              console.error('Failed to fetch user details:', err);
+            }
+          } catch (e) {
+            console.error('Failed to parse stored user:', e);
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('authSuccess', handleAuthSuccess);
 
     // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -104,7 +140,10 @@ function Navbar() {
       // If INITIAL_SESSION with no session, keep existing state (from localStorage)
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('authSuccess', handleAuthSuccess);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -219,6 +258,16 @@ function Navbar() {
                 </button>
               )}
               
+              {/* OPTION 6: Hybrid - Single CTA Button that Opens Modal */}
+              {navbarVariant === 'option6' && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setShowAuthModal(true)}
+                >
+                  {location.pathname === '/' ? 'Sign Up Free' : 'Try Free →'}
+                </button>
+              )}
+              
               {/* Variant Selector (Demo Mode) */}
               <div className="navbar-variant-selector">
                 <select 
@@ -230,14 +279,20 @@ function Navbar() {
                   <option value="option1">Option 1: Single CTA</option>
                   <option value="option3">Option 3: Context-Aware</option>
                   <option value="option5">Option 5: Get Started</option>
+                  <option value="option6">Option 6: Hybrid (1+5) ⭐</option>
                 </select>
               </div>
             </>
           )}
         </div>
       </div>
-      {/* Auth Modal for Option 5 */}
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      {/* Auth Modal for Option 5 & 6 */}
+      {(navbarVariant === 'option5' || navbarVariant === 'option6') && (
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
     </nav>
   );
 }
