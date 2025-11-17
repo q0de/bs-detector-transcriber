@@ -60,6 +60,21 @@
   color: white !important;
 }
 
+/* Login link - less prominent, for existing users */
+.login-link {
+  font-size: 14px !important;
+  color: #999 !important;
+  font-weight: 400 !important;
+  opacity: 0.8;
+  transition: all 0.2s;
+}
+
+.login-link:hover {
+  color: #667eea !important;
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .navbar-user {
   position: relative;
   cursor: pointer;

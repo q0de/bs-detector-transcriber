@@ -179,12 +179,17 @@ function Navbar() {
           ) : (
             <>
               <Link to="/pricing">Pricing</Link>
-              <Link to="/login">Login</Link>
               {/* Context-aware CTA: Show "Sign Up" on homepage, "Try Free" elsewhere */}
               {location.pathname === '/' ? (
-                <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
+                <>
+                  <Link to="/login" className="login-link">Login</Link>
+                  <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
+                </>
               ) : (
-                <Link to="/" className="btn btn-primary">Try Free →</Link>
+                <>
+                  <Link to="/login" className="login-link">Login</Link>
+                  <Link to="/" className="btn btn-primary">Try Free →</Link>
+                </>
               )}
             </>
           )}
