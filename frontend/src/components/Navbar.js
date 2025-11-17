@@ -179,7 +179,7 @@ function Navbar() {
             <>
               <Link to="/pricing">Pricing</Link>
               <Link to="/login">Login</Link>
-              <Link to="/signup" className="btn btn-primary">Get Started</Link>
+              <Link to="/" className="btn btn-primary">Try Free →</Link>
             </>
           )}
         </div>

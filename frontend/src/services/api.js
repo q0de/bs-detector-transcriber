@@ -55,6 +55,7 @@ export const userAPI = {
 // Video API
 export const videoAPI = {
   process: (url, analysisType) => api.post('/videos/process', { url, analysis_type: analysisType }),
+  processFree: (url) => axios.post(`${API_URL}/videos/process-free`, { url }),  // No auth required
   getHistory: (params) => api.get('/videos/history', { params }),
   getVideo: (videoId) => api.get(`/videos/${videoId}`),
   deleteVideo: (videoId) => api.delete(`/videos/${videoId}`),

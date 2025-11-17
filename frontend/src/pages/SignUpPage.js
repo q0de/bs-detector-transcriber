@@ -43,11 +43,29 @@ function SignUpPage() {
     setLoading(true);
 
     try {
+      // Step 1: Create account
       await authAPI.signup(email, password);
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      
+      // Step 2: Auto-login (instant access - no email verification gate!)
+      const loginResponse = await authAPI.login(email, password);
+      localStorage.setItem('access_token', loginResponse.data.access_token);
+      
+      // Step 3: Establish Supabase session
+      const { supabase } = require('../services/supabase');
+      await supabase.auth.setSession({
+        access_token: loginResponse.data.access_token,
+        refresh_token: loginResponse.data.refresh_token || loginResponse.data.access_token
+      });
+      
+      // Step 4: Instant access! (Verification email sent in background)
+      console.log('✅ Account created and logged in!');
+      navigate('/dashboard', {
+        state: {
+          loginSuccess: true,
+          message: '🎉 Welcome! You have 60 free minutes to get started.',
+          showVerificationReminder: true
+        }
+      });
     } catch (err) {
       console.error('Signup error:', err);
       if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
@@ -65,20 +83,6 @@ function SignUpPage() {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="message message-success">
-            <h2>Check your email!</h2>
-            <p>We've sent a verification link to {email}</p>
-            <p>Please verify your email to continue.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="auth-page">

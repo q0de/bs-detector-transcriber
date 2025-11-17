@@ -76,12 +76,13 @@ function VideoProcessor({ onProcessed }) {
 
     // Check if user is logged in
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      console.log('No token found, redirecting to signup');
-      navigate('/signup');
-      return;
+    const isAnonymous = !token;
+    
+    if (isAnonymous) {
+      console.log('🎁 Anonymous user - using FREE trial mode');
+    } else {
+      console.log('✅ User is authenticated, proceeding with normal processing');
     }
-    console.log('User is authenticated, proceeding with video processing');
 
     setLoading(true);
     setError('');
@@ -100,7 +101,17 @@ function VideoProcessor({ onProcessed }) {
       }
       
       setProcessingStatus('Processing video...');
-      const response = await videoAPI.process(cleanUrl, analysisType);
+      
+      // Use different endpoint based on auth status
+      let response;
+      if (isAnonymous) {
+        // Anonymous free trial - only summarize
+        response = await videoAPI.processFree(cleanUrl);
+        console.log('🎉 Free trial analysis complete!');
+      } else {
+        // Authenticated user - full processing
+        response = await videoAPI.process(cleanUrl, analysisType);
+      }
       
       setProcessingStatus('Analysis complete!');
       
@@ -109,8 +120,16 @@ function VideoProcessor({ onProcessed }) {
         onProcessed(response.data);
       }
       
-      // Redirect to dashboard with results
-      navigate('/dashboard', { state: { videoResult: response.data } });
+      // Redirect to results with signup prompt for anonymous users
+      if (isAnonymous) {
+        navigate('/free-trial-result', { state: { 
+          videoResult: response.data,
+          originalUrl: cleanUrl 
+        } });
+      } else {
+        // Redirect to dashboard with results for authenticated users
+        navigate('/dashboard', { state: { videoResult: response.data } });
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to process video. Please try again.');
       setProcessingStatus('');

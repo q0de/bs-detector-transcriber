@@ -93,13 +93,14 @@ def add_cors_headers(response):
 # Note: Routes are imported but health check should work even if routes fail
 try:
     print("📦 Importing routes...")
-    from routes import auth, videos, payments, users, referrals, badges
+    from routes import auth, videos, videos_free, payments, users, referrals, badges
     print("✅ Routes imported successfully")
     
     # Register blueprints
     print("📝 Registering blueprints...")
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(videos.bp, url_prefix='/api/videos')
+    app.register_blueprint(videos_free.bp, url_prefix='/api/videos')  # Free anonymous endpoint
     app.register_blueprint(payments.bp, url_prefix='/api/payments')
     app.register_blueprint(users.bp, url_prefix='/api/users')
     app.register_blueprint(referrals.referrals_bp, url_prefix='/api/referrals')
