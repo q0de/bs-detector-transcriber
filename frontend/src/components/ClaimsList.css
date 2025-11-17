@@ -553,6 +553,92 @@
   animation: pulse 2s infinite;
 }
 
+/* NEW: Comparison Table Layout */
+.recheck-comparison-table {
+  margin: 16px 0;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 60px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comparison-row:first-child {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #667eea;
+  padding-top: 0;
+}
+
+.comparison-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.comparison-label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.comparison-original-header,
+.comparison-updated-header {
+  text-align: center;
+  color: #667eea;
+}
+
+.comparison-original {
+  text-align: center;
+  opacity: 0.7;
+}
+
+.comparison-arrow {
+  text-align: center;
+  color: #667eea;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.comparison-updated {
+  text-align: center;
+  font-weight: 600;
+}
+
+.comparison-updated .changed {
+  background: #fff5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #feb2b2;
+  animation: highlightChange 0.5s ease;
+}
+
+.comparison-updated .same {
+  background: #f0fff4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #9ae6b4;
+}
+
+@keyframes highlightChange {
+  0%, 100% {
+    background: #fff5f5;
+  }
+  50% {
+    background: #fed7d7;
+  }
+}
+
+/* OLD comparison layout (keeping for backwards compatibility) */
 .recheck-comparison {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -648,6 +734,30 @@
 }
 
 @media (max-width: 768px) {
+  /* Mobile responsive for comparison table */
+  .recheck-comparison-table {
+    padding: 12px;
+  }
+  
+  .comparison-row {
+    grid-template-columns: 80px 1fr 40px 1fr;
+    gap: 8px;
+    font-size: 13px;
+  }
+  
+  .comparison-label {
+    font-size: 12px;
+  }
+  
+  .comparison-arrow {
+    font-size: 14px;
+  }
+  
+  .comparison-row:first-child {
+    font-size: 10px;
+  }
+  
+  /* Old comparison layout */
   .recheck-comparison {
     grid-template-columns: 1fr;
     gap: 12px;
