@@ -30,8 +30,15 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
   const renderHighlightedText = (text) => {
     if (!showHighlights || !text) return text;
     
+    // First, convert emojis to tags if Claude used emojis instead of tags
+    let normalizedText = text
+      .replace(/✅/g, '[VERIFIED]')
+      .replace(/🔮/g, '[OPINION]')
+      .replace(/⚠️/g, '[UNCERTAIN]')
+      .replace(/❌/g, '[FALSE]');
+    
     // Split by tags and add appropriate spans
-    const parts = text.split(/(\[VERIFIED\]|\[OPINION\]|\[UNCERTAIN\]|\[FALSE\])/g);
+    const parts = normalizedText.split(/(\[VERIFIED\]|\[OPINION\]|\[UNCERTAIN\]|\[FALSE\])/g);
     let currentClass = '';
     
     return parts.map((part, index) => {

@@ -429,7 +429,7 @@ Transcription:
                 include_highlights_instruction = transcript_length < 12000
                 
                 if include_highlights_instruction:
-                    highlights_instruction = '"full_transcript_with_highlights": "<REQUIRED: Return the FULL transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted BEFORE each corresponding claim. Do NOT omit this field.>"'
+                    highlights_instruction = '"full_transcript_with_highlights": "<REQUIRED: Return the COMPLETE, WORD-FOR-WORD transcript (every single word from the original transcription above) with TEXT TAGS [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] inserted BEFORE each corresponding claim. Do NOT summarize, do NOT truncate, do NOT skip any words. Include the ENTIRE transcript exactly as provided, just with tags added. Use ONLY the tag format [VERIFIED] NOT emojis. Do NOT omit this field.>"'
                     print(f"📝 Short transcript ({transcript_length} chars) - REQUIRING Claude to add highlights", flush=True)
                 else:
                     highlights_instruction = '"full_transcript_with_highlights": "<OPTIONAL - omit this field for long transcripts>"'
@@ -512,7 +512,7 @@ FACT SCORE GUIDANCE:
 Analyze this transcription:
 {transcription}
 
-{"REQUIRED: For short transcripts, you MUST include the 'full_transcript_with_highlights' field with the complete transcript and all highlight tags. Do not omit this field." if include_highlights_instruction else ""}
+{"CRITICAL: For short transcripts, the 'full_transcript_with_highlights' field MUST contain the COMPLETE, WORD-FOR-WORD transcript (every single word from the transcription above) with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted. Do NOT summarize, do NOT truncate, do NOT skip words. Include the ENTIRE transcript exactly as provided, just with tags added." if include_highlights_instruction else ""}
 
 Remember: Return ONLY the JSON object, no other text."""
             else:
@@ -768,7 +768,23 @@ Remember: Return ONLY the JSON object, no other text."""
             )
             
             if has_claude_highlights:
-                print("✅ Using Claude's inline highlights (short transcript)")
+                # Validate that Claude didn't truncate the transcript
+                original_length = len(transcription)
+                highlighted_length = len(str(claude_highlights))
+                # Remove tags to get approximate content length
+                content_length = len(re.sub(r'\[(VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', str(claude_highlights)))
+                
+                # If highlighted transcript is less than 80% of original, Claude truncated it
+                if content_length < original_length * 0.8:
+                    print(f"⚠️ Claude's highlighted transcript is truncated ({content_length} vs {original_length} chars)")
+                    print("🎨 Falling back to auto-highlighting for complete transcript")
+                    has_claude_highlights = False  # Force fallback
+                else:
+                    print(f"✅ Using Claude's inline highlights (short transcript) - {highlighted_length} chars")
+            
+            if has_claude_highlights:
+                # Already validated above, use Claude's highlights
+                pass
             else:
                 print("🎨 Generating highlights via auto-matching (long transcript or Claude didn't add them)")
                 highlighted_transcript = self.auto_highlight_transcript(transcription, analysis)

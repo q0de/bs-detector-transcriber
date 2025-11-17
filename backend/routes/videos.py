@@ -154,7 +154,24 @@ def process_video():
                 )
                 
                 if has_claude_highlights:
-                    print("✅ Using Claude's inline highlights (short transcript)")
+                    # Validate that Claude didn't truncate the transcript
+                    import re
+                    original_length = len(existing_transcript)
+                    highlighted_length = len(str(claude_highlights))
+                    # Remove tags to get approximate content length
+                    content_length = len(re.sub(r'\[(VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', str(claude_highlights)))
+                    
+                    # If highlighted transcript is less than 80% of original, Claude truncated it
+                    if content_length < original_length * 0.8:
+                        print(f"⚠️ Claude's highlighted transcript is truncated ({content_length} vs {original_length} chars)")
+                        print("🎨 Falling back to auto-highlighting for complete transcript")
+                        has_claude_highlights = False  # Force fallback
+                    else:
+                        print(f"✅ Using Claude's inline highlights (short transcript) - {highlighted_length} chars")
+                
+                if has_claude_highlights:
+                    # Already validated above, use Claude's highlights
+                    pass
                 else:
                     print("🎨 Generating highlights via auto-matching (long transcript or Claude didn't add them)")
                     highlighted_transcript = processor.auto_highlight_transcript(existing_transcript, analysis)
