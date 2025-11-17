@@ -133,7 +133,7 @@ function Navbar() {
       subscription.unsubscribe();
       window.removeEventListener('authSuccess', handleAuthSuccess);
     };
-  }, []);
+  }, []); // Run once on mount, then rely on auth state change listener
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -141,6 +141,23 @@ function Navbar() {
     localStorage.removeItem('user');
     navigate('/');
   };
+
+  // Helper to get current user (from state or localStorage fallback)
+  const getCurrentUser = () => {
+    if (user) return user;
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        return JSON.parse(storedUser);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const currentUser = getCurrentUser();
+  const isLoggedIn = !!(currentUser || localStorage.getItem('access_token'));
 
   const getTierBadgeColor = (tier) => {
     const colors = {
@@ -161,17 +178,17 @@ function Navbar() {
         </Link>
         
         <div className="navbar-links">
-          {user ? (
+          {isLoggedIn ? (
             <>
               <Link to="/dashboard">Dashboard</Link>
               <Link to="/history">History</Link>
               <Link to="/pricing">Pricing</Link>
               <div className="navbar-user" onClick={() => setShowDropdown(!showDropdown)}>
                 <div className="user-avatar">
-                  {user.email?.charAt(0).toUpperCase()}
+                  {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="user-info-preview">
-                  <span className="user-email">{user.email?.split('@')[0]}</span>
+                  <span className="user-email">{currentUser?.email?.split('@')[0] || 'User'}</span>
                   {userDetails?.subscription_tier && (
                     <span 
                       className="user-tier-badge"
@@ -186,7 +203,7 @@ function Navbar() {
                   <div className="navbar-dropdown">
                     <div className="dropdown-header">
                       <div className="dropdown-user-info">
-                        <strong>{user.email}</strong>
+                        <strong>{currentUser?.email || 'User'}</strong>
                         {userDetails && (
                           <>
                             <span className="dropdown-tier">
