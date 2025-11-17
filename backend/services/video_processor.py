@@ -49,27 +49,44 @@ class VideoProcessor:
         
         # Add tags before each claim in the transcript
         for claim_text, tag in claims_with_tags:
-            # Try to find the claim (case-insensitive, flexible whitespace)
-            # Normalize whitespace in both claim and transcript
+            # Normalize whitespace
             normalized_claim = ' '.join(claim_text.split())
             
-            # Search for the claim in the transcript
-            import re
-            # Create a pattern that's flexible with whitespace
-            pattern = re.escape(normalized_claim)
-            pattern = pattern.replace(r'\ ', r'\s+')  # Allow flexible whitespace
+            print(f"  🔍 Searching for {tag}: \"{normalized_claim[:80]}...\"")
             
-            # Find all matches
+            import re
+            
+            # Strategy 1: Try exact match (case-insensitive, flexible whitespace)
+            pattern = re.escape(normalized_claim)
+            pattern = pattern.replace(r'\ ', r'\s+')
             matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
+            
+            # Strategy 2: If no exact match, try partial match with key words (5+ words minimum)
+            if not matches and len(normalized_claim.split()) >= 5:
+                # Extract key words (5-7 consecutive words from middle of claim)
+                words = normalized_claim.split()
+                # Try 7-word phrase first, then 5-word
+                for window_size in [7, 5]:
+                    if len(words) >= window_size and not matches:
+                        start_idx = len(words) // 2 - window_size // 2
+                        key_phrase = ' '.join(words[start_idx:start_idx + window_size])
+                        pattern = re.escape(key_phrase)
+                        pattern = pattern.replace(r'\ ', r'\s+')
+                        matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
+                        if matches:
+                            print(f"  💡 Found via partial match: \"{key_phrase}\"")
+                            break
             
             if matches:
                 # Replace from end to start to preserve positions
                 for match in reversed(matches):
-                    # Insert tag before the claim
+                    # Insert tag before the match
                     start = match.start()
                     highlighted = highlighted[:start] + tag + ' ' + highlighted[start:]
                     highlights_added += 1
                     print(f"  ✅ Added {tag} at position {start}")
+            else:
+                print(f"  ❌ NOT FOUND (tried exact + partial)")
         
         if highlights_added > 0:
             print(f"✅ Added {highlights_added} highlights to transcript")
@@ -401,6 +418,17 @@ Be thorough and specific in your correction notes!"""
 Transcription:
 {transcription}"""
             elif analysis_type == 'fact-check':
+                # Determine if transcript is short enough for Claude to add inline highlights
+                transcript_length = len(transcription)
+                include_highlights_instruction = transcript_length < 5000
+                
+                if include_highlights_instruction:
+                    highlights_instruction = '"full_transcript_with_highlights": "<the full transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted before each claim>"'
+                    print(f"📝 Short transcript ({transcript_length} chars) - asking Claude to add highlights")
+                else:
+                    highlights_instruction = '"full_transcript_with_highlights": "<OPTIONAL - omit this field for long transcripts>"'
+                    print(f"📝 Long transcript ({transcript_length} chars) - will use auto-highlighting instead")
+                
                 prompt = f"""Please fact-check the following video transcription and return your analysis as a JSON object.
 
 IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code blocks):
@@ -459,7 +487,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
     "overall_bias": "<Low | Moderate | High>"
   }},
   "red_flags": ["<any concerning patterns, logical fallacies, or manipulation tactics>"],
-  "full_transcript_with_highlights": "<OPTIONAL: Only include if transcript is short (<5000 chars). Otherwise omit this field entirely.>"
+  {highlights_instruction}
 }}
 
 CLAIM CATEGORIES:
@@ -684,16 +712,29 @@ Remember: Return ONLY the JSON object, no other text."""
         analysis = self.analyze_with_claude(transcription, analysis_type)
         print("✅ Analysis complete!")
         
-        # For fact-checks, auto-generate highlighted transcript
+        # For fact-checks, auto-generate highlighted transcript if Claude didn't
         highlighted_transcript = None
         if analysis_type == 'fact-check' and isinstance(analysis, dict):
-            highlighted_transcript = self.auto_highlight_transcript(transcription, analysis)
-            # Add to analysis dict
-            if highlighted_transcript and highlighted_transcript != transcription:
-                analysis['full_transcript_with_highlights'] = highlighted_transcript
-                print("✅ Highlighted transcript added to analysis")
+            # Check if Claude already added highlights
+            claude_highlights = analysis.get('full_transcript_with_highlights')
+            has_claude_highlights = claude_highlights and (
+                '[VERIFIED]' in str(claude_highlights) or 
+                '[OPINION]' in str(claude_highlights) or
+                '[UNCERTAIN]' in str(claude_highlights) or
+                '[FALSE]' in str(claude_highlights)
+            )
+            
+            if has_claude_highlights:
+                print("✅ Using Claude's inline highlights (short transcript)")
             else:
-                print("⚠️ No highlights added to transcript")
+                print("🎨 Generating highlights via auto-matching (long transcript or Claude didn't add them)")
+                highlighted_transcript = self.auto_highlight_transcript(transcription, analysis)
+                # Add to analysis dict
+                if highlighted_transcript and highlighted_transcript != transcription:
+                    analysis['full_transcript_with_highlights'] = highlighted_transcript
+                    print("✅ Highlighted transcript added to analysis")
+                else:
+                    print("⚠️ No highlights added to transcript")
         
         return {
             'title': title,

@@ -141,6 +141,30 @@ def process_video():
             print("🔄 Reusing cached transcript - only running new analysis!")
             # Only run Claude analysis with the existing transcript
             analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
+            
+            # For fact-checks, auto-generate highlighted transcript if Claude didn't
+            if analysis_type == 'fact-check' and isinstance(analysis, dict):
+                # Check if Claude already added highlights
+                claude_highlights = analysis.get('full_transcript_with_highlights')
+                has_claude_highlights = claude_highlights and (
+                    '[VERIFIED]' in str(claude_highlights) or 
+                    '[OPINION]' in str(claude_highlights) or
+                    '[UNCERTAIN]' in str(claude_highlights) or
+                    '[FALSE]' in str(claude_highlights)
+                )
+                
+                if has_claude_highlights:
+                    print("✅ Using Claude's inline highlights (short transcript)")
+                else:
+                    print("🎨 Generating highlights via auto-matching (long transcript or Claude didn't add them)")
+                    highlighted_transcript = processor.auto_highlight_transcript(existing_transcript, analysis)
+                    # Add to analysis dict
+                    if highlighted_transcript and highlighted_transcript != existing_transcript:
+                        analysis['full_transcript_with_highlights'] = highlighted_transcript
+                        print("✅ Highlighted transcript added to analysis")
+                    else:
+                        print("⚠️ No highlights added to transcript")
+            
             result = {
                 'title': video_metadata['title'],
                 'platform': video_metadata['platform'],
