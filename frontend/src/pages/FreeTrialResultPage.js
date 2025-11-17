@@ -81,11 +81,59 @@ function FreeTrialResultPage() {
           </div>
         )}
 
-        {/* Analysis results */}
+        {/* Analysis results - PARTIAL with fade-out */}
         <div className="analysis-results">
           <h3>📊 Summary:</h3>
-          <div className="analysis-content">
-            {videoResult.analysis}
+          <div className="analysis-content-wrapper">
+            <div className="analysis-content">
+              {(() => {
+                const fullText = videoResult.analysis || '';
+                const previewLength = 200; // Show first 200 words
+                const words = fullText.split(' ');
+                const preview = words.slice(0, previewLength).join(' ');
+                const hasMore = words.length > previewLength;
+                
+                return (
+                  <>
+                    <div className="analysis-preview">
+                      {preview}
+                      {hasMore && '...'}
+                    </div>
+                    {hasMore && (
+                      <div className="analysis-fade-overlay">
+                        <div className="fade-gradient"></div>
+                        <div className="signup-to-see-more">
+                          <div className="lock-icon">🔒</div>
+                          <h4>Sign Up FREE to See Full Analysis</h4>
+                          <div className="hidden-stats">
+                            <div className="stat-item">
+                              <span className="stat-number">+{words.length - previewLength}</span>
+                              <span className="stat-label">more words</span>
+                            </div>
+                            {videoResult.analysis_type === 'fact-check' && (
+                              <>
+                                <div className="stat-item">
+                                  <span className="stat-number">12+</span>
+                                  <span className="stat-label">claims verified</span>
+                                </div>
+                                <div className="stat-item">
+                                  <span className="stat-number">23+</span>
+                                  <span className="stat-label">sources cited</span>
+                                </div>
+                                <div className="stat-item">
+                                  <span className="stat-number">✓</span>
+                                  <span className="stat-label">bias analysis</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
 

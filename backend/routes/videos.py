@@ -561,3 +561,55 @@ def export_video(video_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+@bp.route('/report-claim-error', methods=['POST'])
+def report_claim_error():
+    """Report an error in a fact-check claim (works for anonymous users too)"""
+    try:
+        data = request.get_json()
+        video_id = data.get('video_id')
+        claim_text = data.get('claim_text')
+        claim_verdict = data.get('claim_verdict')
+        report_reason = data.get('reason', '')
+        user_email = data.get('user_email', '')
+        
+        if not video_id or not claim_text or not claim_verdict:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        supabase = get_supabase_client()
+        
+        # Get user_id if authenticated (optional)
+        user_id = None
+        if hasattr(request, 'user_id') and request.user_id:
+            user_id = request.user_id
+        
+        # Insert report
+        report_data = {
+            'video_id': video_id,
+            'claim_text': claim_text[:500],  # Limit length
+            'claim_verdict': claim_verdict,
+            'report_reason': report_reason[:500] if report_reason else None,
+            'status': 'pending'
+        }
+        
+        if user_id:
+            report_data['user_id'] = user_id
+        elif user_email:
+            report_data['user_email'] = user_email
+        
+        result = supabase.table('claim_reports').insert(report_data).execute()
+        
+        print(f"✅ Claim error reported: video_id={video_id}, user_id={user_id or 'anonymous'}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Thank you for reporting this! We\'ll review it soon.',
+            'report_id': result.data[0]['id'] if result.data else None
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error reporting claim: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+

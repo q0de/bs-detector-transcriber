@@ -56,6 +56,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   border-left: 4px solid #e0e0e0;
+  position: relative; /* For thumbs-up animation positioning */
 }
 
 .claim-item.green {
@@ -81,6 +82,29 @@
 
 .claim-item.expanded {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Grey-out effect when error is reported */
+.claim-item.error-reported {
+  opacity: 0.5;
+  background: #f5f5f5;
+  position: relative;
+}
+
+.claim-item.error-reported::after {
+  content: '✓ Thanks! We\'ll review this.';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .claim-header {
@@ -366,6 +390,99 @@
 .claim-recheck:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Report Error Button */
+.claim-report-error {
+  padding: 6px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #856404;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claim-report-error:hover:not(:disabled) {
+  background: #ffc107;
+  color: #333;
+  border-color: #ffc107;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.claim-report-error.reported {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  color: white;
+  cursor: not-allowed;
+}
+
+.claim-report-error:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Thumbs-up Animation */
+.thumbs-up-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+  animation: thumbsUpFly 2s ease forwards;
+}
+
+.thumbs-up-icon {
+  font-size: 80px;
+  animation: thumbsUpBounce 0.6s ease;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+.thumbs-up-text {
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #4CAF50;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes thumbsUpFly {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5) translateY(20px);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2) translateY(-10px);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(-20px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8) translateY(-40px);
+  }
+}
+
+@keyframes thumbsUpBounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+  75% {
+    transform: scale(1.2) rotate(10deg);
+  }
 }
 
 @keyframes pulse {

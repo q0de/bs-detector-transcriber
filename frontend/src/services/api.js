@@ -61,6 +61,7 @@ export const videoAPI = {
   deleteVideo: (videoId) => api.delete(`/videos/${videoId}`),
   exportVideo: (videoId, format) => api.get(`/videos/${videoId}/export`, { params: { format }, responseType: 'blob' }),
   recheckClaim: (videoId, claimData) => api.post(`/videos/${videoId}/recheck-claim`, claimData),
+  reportClaimError: (reportData) => axios.post(`${API_URL}/videos/report-claim-error`, reportData),  // No auth required
 };
 
 // Payment API
