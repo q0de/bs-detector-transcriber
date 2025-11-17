@@ -182,7 +182,6 @@ function Navbar() {
             <>
               <Link to="/dashboard">Dashboard</Link>
               <Link to="/history">History</Link>
-              <Link to="/pricing">Pricing</Link>
               <div className="navbar-user" onClick={() => setShowDropdown(!showDropdown)}>
                 <div className="user-avatar">
                   {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
