@@ -75,6 +75,37 @@
   text-decoration: underline;
 }
 
+/* Navbar Variant Selector (Demo Mode) */
+.navbar-variant-selector {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.variant-select {
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f9fa;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.variant-select:hover {
+  background: #e9ecef;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.variant-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
 .navbar-user {
   position: relative;
   cursor: pointer;
