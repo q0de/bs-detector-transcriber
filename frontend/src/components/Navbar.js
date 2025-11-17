@@ -14,13 +14,17 @@ function Navbar() {
   console.log('🔄 Navbar render - user:', user?.email || 'null', 'userDetails:', userDetails?.subscription_tier || 'null');
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in - run on EVERY page load
     const checkUser = async () => {
       console.log('🚀 Navbar useEffect - starting auth check...');
+      console.log('📍 Current page:', window.location.pathname);
       
       // First, try to get session from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
       console.log('🔍 Navbar checking auth - Supabase session:', session?.user?.email || 'none');
+      if (error) {
+        console.error('❌ Supabase session error:', error);
+      }
       
       if (session?.user) {
         console.log('✅ Found Supabase session');
