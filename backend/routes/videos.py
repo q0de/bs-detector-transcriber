@@ -109,19 +109,30 @@ def process_video():
         
         print(f"📊 Will charge {estimated_minutes} minutes for this video")
         
-        # Check limit
+        # Check limit - Grace period approach
         used = float(user.get('minutes_used_this_month', 0))
         limit = user.get('monthly_minute_limit', 60)
         
-        if used + estimated_minutes > limit:
+        # Block NEW videos if already AT or OVER limit
+        if used >= limit:
+            print(f"❌ User has exhausted their limit: {used} >= {limit}")
             return jsonify({
                 'success': False,
-                'error': f'Monthly limit reached ({limit} minutes). Please upgrade your plan.',
+                'error': f'You have used all {limit} minutes this month. Upgrade to continue analyzing videos.',
                 'upgrade_required': True,
                 'current_tier': user.get('subscription_tier', 'free'),
                 'used': used,
                 'limit': limit
             }), 403
+        
+        # Grace period: If they have ANY minutes left, let them start (even if it goes over)
+        remaining = limit - used
+        if estimated_minutes > remaining:
+            overage = estimated_minutes - remaining
+            print(f"⚠️ Grace period: This video will use {estimated_minutes} min, going {overage} min over limit")
+            print(f"   Allowing because user has {remaining} min remaining (started under limit)")
+        else:
+            print(f"✅ User has enough minutes: {remaining} remaining, needs {estimated_minutes}")
         
         # Process video (use cached transcript if available)
         if existing_transcript:
