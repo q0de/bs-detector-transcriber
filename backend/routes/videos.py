@@ -275,12 +275,12 @@ def process_video():
         traceback.print_exc()
         
         # Specific error messages for common issues
-        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower():
-            print("⚠️ Detected bot/sign-in error - likely YouTube blocking")
+        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower() or 'proxy' in error_msg.lower() or 'tunnel connection' in error_msg.lower():
+            print("⚠️ Detected download/access error - video unavailable")
             return jsonify({
                 'success': False,
-                'error': 'This video doesn\'t have transcripts available and cannot be downloaded due to access restrictions. Please try a different video or one with captions enabled.',
-                'suggestion': 'Most news videos, educational content, and popular channels have transcripts and will work.'
+                'error': 'This video doesn\'t have transcripts available and cannot be downloaded. Please try a video with captions/subtitles enabled.',
+                'suggestion': 'Most news videos, educational content, and popular channels have transcripts and will work great!'
             }), 400
         elif 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower() or 'duration' in error_msg.lower():
             print("⚠️ Detected download/duration error")
