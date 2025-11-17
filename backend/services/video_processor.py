@@ -179,6 +179,74 @@ class VideoProcessor:
         except Exception as e:
             raise Exception(f"Couldn't transcribe audio: {str(e)}")
     
+    def deep_recheck_claim(self, claim, timestamp, context, original_verdict):
+        """Perform deep fact-check on a single claim flagged by user"""
+        try:
+            print(f"🔍 Deep re-checking claim: {claim[:100]}...")
+            
+            # Extract relevant context (roughly 500 characters around the claim)
+            context_snippet = context[:3000] if len(context) > 3000 else context
+            
+            prompt = f"""You are a fact-checker. A user has flagged this claim as potentially incorrect.
+Please perform a DEEP fact-check with extra scrutiny.
+
+CLAIM TO VERIFY:
+"{claim}"
+
+ORIGINAL TIMESTAMP: {timestamp}
+ORIGINAL VERDICT: {original_verdict}
+
+RELEVANT CONTEXT FROM VIDEO:
+{context_snippet}
+
+Your task:
+1. Verify if this claim is factually accurate
+2. Check for name misspellings (e.g., "Boowbert" should be "Boebert")  
+3. Find at least 3 reliable sources
+4. Determine if the original verdict was correct
+
+Return ONLY valid JSON (no markdown, no code blocks):
+{{
+  "verdict": "VERIFIED | OPINION | UNCERTAIN | FALSE",
+  "explanation": "Detailed explanation of why this verdict is correct",
+  "sources": ["url1", "url2", "url3"],
+  "confidence": "High | Medium | Low",
+  "correction_notes": "Any corrections made (e.g., name spellings fixed, additional context found)"
+}}"""
+
+            message = self.anthropic_client.messages.create(
+                model="claude-3-5-sonnet-20240620",  # Use Sonnet for accuracy
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            response_text = message.content[0].text.strip()
+            
+            # Parse JSON response
+            import json
+            import re
+            
+            # Remove markdown if present
+            if response_text.startswith('```'):
+                response_text = re.sub(r'^```(?:json)?\s*\n', '', response_text)
+                response_text = re.sub(r'\n```\s*$', '', response_text)
+            
+            result = json.loads(response_text)
+            
+            # Add metadata
+            result['recheckTimestamp'] = datetime.utcnow().isoformat()
+            result['changed'] = result['verdict'] != original_verdict
+            
+            print(f"✅ Re-check complete: {result['verdict']} (Changed: {result['changed']})")
+            
+            return result
+            
+        except Exception as e:
+            print(f"❌ Re-check failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"Couldn't re-check claim: {str(e)}")
+    
     def analyze_with_claude(self, transcription, analysis_type):
         """Analyze transcription with Claude"""
         try:

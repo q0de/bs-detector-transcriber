@@ -144,7 +144,7 @@ function DashboardPage() {
                 {/* Show creator reputation if available */}
                 {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
                 
-                <ClaimsList data={videoResult.analysis} />
+                <ClaimsList data={videoResult.analysis} videoId={videoResult.id} />
                 <BiasScale data={videoResult.analysis} />
                 <InteractiveTranscript 
                   transcript={videoResult.transcription}

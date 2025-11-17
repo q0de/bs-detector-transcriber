@@ -65,8 +65,12 @@ def add_cors_headers(response):
     try:
         origin = request.headers.get('Origin', 'NO_ORIGIN')
         
-        # Only log non-static requests
-        if not request.path.startswith('/static'):
+        # Only log non-static and non-health-check requests
+        # Skip logging for Render health checks (GET / from Render/1.0)
+        user_agent = request.headers.get('User-Agent', '')
+        is_health_check = (request.path == '/' or request.path == '/api/health') and 'Render' in user_agent
+        
+        if not request.path.startswith('/static') and not is_health_check:
             print(f"🟢 {request.method} {request.path} - Origin: {origin}")
         
         if origin in allowed_origins:

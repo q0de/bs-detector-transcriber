@@ -432,6 +432,74 @@ def delete_video(video_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@bp.route('/<video_id>/recheck-claim', methods=['POST'])
+@verify_token
+def recheck_claim(video_id):
+    """Re-fact-check a specific claim with deeper analysis"""
+    try:
+        data = request.get_json()
+        claim_text = data.get('claim')
+        timestamp = data.get('timestamp')
+        original_verdict = data.get('original_verdict')
+        
+        if not claim_text:
+            return jsonify({'success': False, 'error': 'Claim text required'}), 400
+        
+        print(f"🔍 User requested re-check for claim in video {video_id}")
+        print(f"   Claim: {claim_text[:100]}...")
+        print(f"   Original verdict: {original_verdict}")
+        
+        # Get video context
+        supabase = get_supabase_client()
+        user_id = request.user_id
+        
+        video_response = supabase.table('videos').select('transcription, user_id').eq('id', video_id).execute()
+        
+        if not video_response.data:
+            return jsonify({'success': False, 'error': 'Video not found'}), 404
+        
+        video = video_response.data[0]
+        
+        # Verify user owns this video
+        if video['user_id'] != user_id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+        transcription = video.get('transcription', '')
+        
+        # Use VideoProcessor to deeply fact-check this specific claim
+        from services.video_processor import VideoProcessor
+        processor = VideoProcessor()
+        result = processor.deep_recheck_claim(
+            claim=claim_text,
+            timestamp=timestamp,
+            context=transcription,
+            original_verdict=original_verdict
+        )
+        
+        # Log the re-check for analytics (optional - create table later)
+        try:
+            supabase.table('claim_rechecks').insert({
+                'video_id': video_id,
+                'user_id': user_id,
+                'claim_text': claim_text[:500],  # Truncate for storage
+                'original_verdict': original_verdict,
+                'new_verdict': result['verdict'],
+                'changed': result['changed']
+            }).execute()
+        except Exception as log_error:
+            print(f"⚠️ Failed to log re-check (non-critical): {log_error}")
+        
+        return jsonify({
+            'success': True,
+            'result': result
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Re-check error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @bp.route('/<video_id>/export', methods=['GET'])
 @verify_token
 def export_video(video_id):
