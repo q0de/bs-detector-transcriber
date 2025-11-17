@@ -48,6 +48,20 @@ function DashboardPage() {
     }
   }, [showLoginMessage]);
 
+  // Ensure analysis is parsed if it's a JSON string
+  useEffect(() => {
+    if (videoResult?.analysis && typeof videoResult.analysis === 'string') {
+      try {
+        console.log('🔧 [useEffect] Parsing analysis string...');
+        const parsed = JSON.parse(videoResult.analysis);
+        setVideoResult({ ...videoResult, analysis: parsed });
+        console.log('✅ [useEffect] Analysis parsed successfully');
+      } catch (e) {
+        console.error('❌ [useEffect] Failed to parse analysis:', e);
+      }
+    }
+  }, [videoResult?.analysis]);
+
   const fetchRecentVideos = async () => {
     try {
       const response = await videoAPI.getHistory({ limit: 5 });
@@ -132,69 +146,86 @@ function DashboardPage() {
               </div>
             )}
             
-            {/* Check if analysis is structured JSON (fact-check) */}
-            {typeof videoResult.analysis === 'object' && videoResult.analysis?.fact_score !== undefined ? (
-              // Render enhanced fact-check components
-              <>
-                <FactCheckScore data={videoResult.analysis} />
-                
-                {/* Share Button - positioned right after score */}
-                <ShareButton videoResult={videoResult} />
-                
-                {/* Show creator reputation if available */}
-                {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
-                
-                <ClaimsList data={videoResult.analysis} videoId={videoResult.id} />
-                <BiasScale data={videoResult.analysis} />
-                <InteractiveTranscript 
-                  transcript={videoResult.transcription}
-                  highlightedTranscript={videoResult.analysis.full_transcript_with_highlights}
-                />
-                
-                {/* Embeddable Badge Codes */}
-                <BadgeEmbed 
-                  videoId={videoResult.id}
-                  creatorId={videoResult.creator?.id}
-                />
-              </>
-            ) : (
-              // Render plain text format (summarize)
-              <>
-                <div className="result-section">
-                  <div className="result-header">
-                    <h3>📄 TRANSCRIPTION</h3>
-                    <div className="result-actions">
-                      <button onClick={() => navigator.clipboard.writeText(videoResult.transcription)}>
-                        Copy
-                      </button>
+            {/* Helper: Get parsed analysis */}
+            {(() => {
+              let analysis = videoResult.analysis;
+              
+              // Parse if it's a JSON string
+              if (typeof analysis === 'string') {
+                try {
+                  analysis = JSON.parse(analysis);
+                } catch (e) {
+                  console.error('Failed to parse analysis:', e);
+                }
+              }
+              
+              // Check if it's a fact-check (has fact_score OR analysis_type is fact-check)
+              const isFactCheck = videoResult.analysis_type === 'fact-check' || 
+                                  (typeof analysis === 'object' && analysis?.fact_score !== undefined);
+              
+              if (isFactCheck && typeof analysis === 'object') {
+                // Render enhanced fact-check components
+                return (
+                  <>
+                    <FactCheckScore data={analysis} />
+                    
+                    {/* Share Button - positioned right after score */}
+                    <ShareButton videoResult={videoResult} />
+                    
+                    {/* Show creator reputation if available */}
+                    {videoResult.creator && <CreatorBadge creator={videoResult.creator} />}
+                    
+                    <ClaimsList data={analysis} videoId={videoResult.id} />
+                    <BiasScale data={analysis} />
+                    <InteractiveTranscript 
+                      transcript={videoResult.transcription}
+                      highlightedTranscript={analysis.full_transcript_with_highlights}
+                    />
+                    
+                    {/* Embeddable Badge Codes */}
+                    <BadgeEmbed 
+                      videoId={videoResult.id}
+                      creatorId={videoResult.creator?.id}
+                    />
+                  </>
+                );
+              } else {
+                // Render plain text format (summarize)
+                return (
+                  <>
+                    <div className="result-section">
+                      <div className="result-header">
+                        <h3>📄 TRANSCRIPTION</h3>
+                        <div className="result-actions">
+                          <button onClick={() => navigator.clipboard.writeText(videoResult.transcription)}>
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <div className="result-content">
+                        {videoResult.transcription}
+                      </div>
                     </div>
-                  </div>
-                  <div className="result-content">
-                    {videoResult.transcription}
-                  </div>
-                </div>
-                
-                <div className="result-section">
-                  <div className="result-header">
-                    <h3>📝 AI ANALYSIS</h3>
-                    <div className="result-actions">
-                      <button onClick={() => navigator.clipboard.writeText(
-                        typeof videoResult.analysis === 'string' 
-                          ? videoResult.analysis 
-                          : JSON.stringify(videoResult.analysis, null, 2)
-                      )}>
-                        Copy
-                      </button>
+                    
+                    <div className="result-section">
+                      <div className="result-header">
+                        <h3>📝 AI ANALYSIS</h3>
+                        <div className="result-actions">
+                          <button onClick={() => navigator.clipboard.writeText(
+                            typeof analysis === 'string' ? analysis : JSON.stringify(analysis, null, 2)
+                          )}>
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <div className="result-content">
+                        {typeof analysis === 'string' ? analysis : JSON.stringify(analysis, null, 2)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="result-content">
-                    {typeof videoResult.analysis === 'string' 
-                      ? videoResult.analysis 
-                      : JSON.stringify(videoResult.analysis, null, 2)}
-                  </div>
-                </div>
-              </>
-            )}
+                  </>
+                );
+              }
+            })()}
           </div>
         )}
         
