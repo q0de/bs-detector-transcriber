@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from middleware.auth_middleware import require_auth
+from middleware.auth_middleware import verify_token
 from services.supabase_client import get_supabase_client
 import random
 import string
@@ -8,7 +8,7 @@ referrals_bp = Blueprint('referrals', __name__)
 supabase = get_supabase_client()
 
 @referrals_bp.route('/code', methods=['GET'])
-@require_auth
+@verify_token
 def get_referral_code():
     """Get or generate user's referral code"""
     try:
@@ -43,7 +43,7 @@ def get_referral_code():
 
 
 @referrals_bp.route('/apply', methods=['POST'])
-@require_auth
+@verify_token
 def apply_referral():
     """Apply a referral code"""
     try:
@@ -80,7 +80,7 @@ def apply_referral():
 
 
 @referrals_bp.route('/stats', methods=['GET'])
-@require_auth
+@verify_token
 def get_referral_stats():
     """Get user's referral statistics"""
     try:
