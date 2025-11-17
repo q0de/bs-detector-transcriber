@@ -69,6 +69,11 @@
   font-size: 14px;
 }
 
+/* Google Sign-In Section Spacing */
+.auth-container .google-signin-container {
+  margin-bottom: 24px;
+}
+
 .auth-footer {
   text-align: center;
   color: var(--text-medium);

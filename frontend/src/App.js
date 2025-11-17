@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import FreeTrialResultPage from './pages/FreeTrialResultPage';
 import PricingPage from './pages/PricingPage';
@@ -32,6 +33,7 @@ function App() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/free-trial-result" element={<FreeTrialResultPage />} />
             <Route
               path="/dashboard"

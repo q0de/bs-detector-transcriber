@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { supabase } from '../services/supabase';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import './AuthPage.css';
 
 function LoginPage() {
@@ -105,6 +106,9 @@ function LoginPage() {
         <div className="auth-divider">
           <span>──────────  OR  ──────────</span>
         </div>
+        
+        {/* Google Sign-In */}
+        <GoogleSignInButton mode="signin" />
         
         <div className="auth-footer">
           <p>Don't have an account? <Link to="/signup">Sign up</Link></p>
