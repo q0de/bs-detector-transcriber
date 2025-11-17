@@ -222,6 +222,10 @@ def process_video():
             try:
                 analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=False)
                 print("✅ Converted analysis dict to JSON string for storage")
+                
+                # VALIDATE: Try parsing it back to ensure it's valid JSON
+                json.loads(analysis_to_store)
+                print("✅ Validated: Analysis is valid JSON")
             except Exception as e:
                 print(f"❌ CRITICAL: Failed to serialize analysis to JSON: {e}")
                 import traceback
@@ -229,19 +233,28 @@ def process_video():
                 # Try with ascii encoding as last resort
                 try:
                     analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=True)
+                    json.loads(analysis_to_store)  # Validate
                     print("✅ Fallback: Converted with ensure_ascii=True")
                 except Exception as e2:
                     print(f"❌ CRITICAL: All JSON serialization attempts failed: {e2}")
-                    # This should never happen with valid Python dicts, but if it does, fail gracefully
-                    raise Exception(f"Cannot serialize analysis to JSON: {e2}")
+                    # DON'T charge user for corrupted analysis - return error
+                    return jsonify({
+                        'success': False,
+                        'error': 'Analysis processing failed due to data corruption. Your minutes have NOT been charged. Please try again.'
+                    }), 500
         elif not isinstance(analysis_to_store, str):
             # This shouldn't happen, but handle it properly if it does
             try:
                 analysis_to_store = json.dumps(analysis_to_store, ensure_ascii=False)
+                json.loads(analysis_to_store)  # Validate
                 print("✅ Converted non-dict/non-string analysis to JSON")
             except:
-                # If it's truly not JSON-serializable, there's a bigger problem
-                raise Exception(f"Analysis is not JSON-serializable: {type(analysis_to_store)}")
+                # If it's truly not JSON-serializable, don't charge the user
+                print(f"❌ Analysis is not JSON-serializable: {type(analysis_to_store)}")
+                return jsonify({
+                    'success': False,
+                    'error': 'Analysis processing failed. Your minutes have NOT been charged. Please try again.'
+                }), 500
         
         # Save to database
         video_data = {
