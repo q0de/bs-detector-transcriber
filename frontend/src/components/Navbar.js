@@ -10,9 +10,14 @@ function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
 
+  // DEBUG: Log current user state on every render
+  console.log('🔄 Navbar render - user:', user?.email || 'null', 'userDetails:', userDetails?.subscription_tier || 'null');
+
   useEffect(() => {
     // Check if user is logged in
     const checkUser = async () => {
+      console.log('🚀 Navbar useEffect - starting auth check...');
+      
       // First, try to get session from Supabase
       const { data: { session } } = await supabase.auth.getSession();
       console.log('🔍 Navbar checking auth - Supabase session:', session?.user?.email || 'none');
