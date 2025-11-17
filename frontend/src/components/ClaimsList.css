@@ -245,6 +245,28 @@
   }
 }
 
+/* Action buttons in expanded state */
+.claim-details-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.claim-details-actions button {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid;
+}
+
 .claim-explanation {
   margin-bottom: 16px;
 }
@@ -359,72 +381,62 @@
   }
 }
 
-/* Re-check Button Styling */
-.claim-recheck {
-  padding: 6px 12px;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 40px;
+/* Re-check Button Styling (now in expanded section) */
+.claim-details-actions .claim-recheck {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
-.claim-recheck:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  transform: scale(1.1);
+.claim-details-actions .claim-recheck:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.claim-recheck.loading {
-  opacity: 0.6;
+.claim-details-actions .claim-recheck.loading {
+  opacity: 0.7;
   cursor: wait;
   animation: pulse 1.5s infinite;
 }
 
-.claim-recheck:disabled {
+.claim-details-actions .claim-recheck:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Report Error Button */
-.claim-report-error {
-  padding: 6px 12px;
+/* Report Error Button (now in expanded section) */
+.claim-details-actions .claim-report-error {
   background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
   color: #856404;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
+  border-color: #ffc107;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
-.claim-report-error:hover:not(:disabled) {
+.claim-details-actions .claim-report-error:hover:not(:disabled) {
   background: #ffc107;
   color: #333;
   border-color: #ffc107;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
 }
 
-.claim-report-error.reported {
+.claim-details-actions .claim-report-error.reported {
   background: #4CAF50;
   border-color: #4CAF50;
   color: white;
   cursor: not-allowed;
 }
 
-.claim-report-error:disabled {
+.claim-details-actions .claim-report-error:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }

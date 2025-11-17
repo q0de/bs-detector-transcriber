@@ -278,6 +278,7 @@ def process_video():
             'minute_multiplier': multiplier,
             'transcription': result['transcription'],
             'analysis': analysis,  # Now guaranteed to be object for fact-check, string for summarize
+            'analysis_type': analysis_type,  # CRITICAL: Frontend needs this to determine UI rendering
             'minutes_remaining': remaining
         }
         
