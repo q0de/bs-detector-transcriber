@@ -15,8 +15,10 @@ function Navbar() {
     const checkUser = async () => {
       // First, try to get session from Supabase
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Navbar checking auth - Supabase session:', session?.user?.email || 'none');
       
       if (session?.user) {
+        console.log('✅ Found Supabase session');
         setUser(session.user);
         // Fetch full user details
         try {
@@ -29,10 +31,12 @@ function Navbar() {
         // Fallback to localStorage
         const token = localStorage.getItem('access_token');
         const storedUser = localStorage.getItem('user');
+        console.log('🔍 Checking localStorage - token:', token ? 'exists' : 'missing', 'user:', storedUser ? 'exists' : 'missing');
         
         if (token && storedUser) {
           try {
             const parsedUser = JSON.parse(storedUser);
+            console.log('✅ Found localStorage user:', parsedUser.email);
             setUser(parsedUser);
             // Fetch user details
             try {
@@ -42,7 +46,7 @@ function Navbar() {
               console.error('Failed to fetch user details:', err);
             }
           } catch (e) {
-            console.error('Failed to parse stored user:', e);
+            console.error('❌ Failed to parse stored user:', e);
             // Clear invalid data
             localStorage.removeItem('access_token');
             localStorage.removeItem('user');
@@ -50,6 +54,7 @@ function Navbar() {
             setUserDetails(null);
           }
         } else {
+          console.log('❌ No authentication found');
           setUser(null);
           setUserDetails(null);
         }
@@ -61,15 +66,21 @@ function Navbar() {
     // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        // Refetch user details on auth change
-        userAPI.getCurrentUser()
-          .then(res => setUserDetails(res.data))
-          .catch(console.error);
-      } else {
-        setUserDetails(null);
+      
+      // Only update state for actual auth events, not INITIAL_SESSION with no session
+      if (event !== 'INITIAL_SESSION' || session?.user) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Refetch user details on auth change
+          userAPI.getCurrentUser()
+            .then(res => setUserDetails(res.data))
+            .catch(console.error);
+        } else if (event === 'SIGNED_OUT') {
+          // Only clear on explicit sign out
+          setUserDetails(null);
+        }
       }
+      // If INITIAL_SESSION with no session, keep existing state (from localStorage)
     });
 
     return () => subscription.unsubscribe();
