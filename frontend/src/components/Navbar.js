@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { userAPI } from '../services/api';
 import './Navbar.css';
@@ -9,6 +9,7 @@ function Navbar() {
   const [userDetails, setUserDetails] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // DEBUG: Log current user state on every render
   console.log('🔄 Navbar render - user:', user?.email || 'null', 'userDetails:', userDetails?.subscription_tier || 'null');
@@ -179,7 +180,12 @@ function Navbar() {
             <>
               <Link to="/pricing">Pricing</Link>
               <Link to="/login">Login</Link>
-              <Link to="/" className="btn btn-primary">Try Free →</Link>
+              {/* Context-aware CTA: Show "Sign Up" on homepage, "Try Free" elsewhere */}
+              {location.pathname === '/' ? (
+                <Link to="/signup" className="btn btn-primary">Sign Up Free</Link>
+              ) : (
+                <Link to="/" className="btn btn-primary">Try Free →</Link>
+              )}
             </>
           )}
         </div>
