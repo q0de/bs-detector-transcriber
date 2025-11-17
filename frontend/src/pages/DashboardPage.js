@@ -87,6 +87,34 @@ function DashboardPage() {
               {videoResult.minutes_charged} minutes used • {videoResult.minutes_remaining} minutes remaining
             </div>
             
+            {/* Video Metadata Card */}
+            {videoResult.metadata && (
+              <div className="video-metadata-card">
+                {videoResult.metadata.thumbnail && (
+                  <img 
+                    src={videoResult.metadata.thumbnail} 
+                    alt="Video thumbnail"
+                    className="video-metadata-thumbnail"
+                  />
+                )}
+                <div className="video-metadata-info">
+                  <h2 className="video-metadata-title">
+                    {videoResult.metadata.title || videoResult.title || 'Video Analysis'}
+                  </h2>
+                  {videoResult.metadata.author && (
+                    <p className="video-metadata-author">
+                      👤 {videoResult.metadata.author}
+                    </p>
+                  )}
+                  <p className="video-metadata-details">
+                    📹 {videoResult.platform} • 
+                    ⏱️ {videoResult.duration_minutes?.toFixed(1)} min • 
+                    📅 {new Date(videoResult.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Check if analysis is structured JSON (fact-check) */}
             {typeof videoResult.analysis === 'object' && videoResult.analysis.fact_score !== undefined ? (
               // Render enhanced fact-check components
