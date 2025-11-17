@@ -3,58 +3,45 @@
   margin: 0 auto;
 }
 
-.input-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 1;
-}
-
 .processor-form {
   background: var(--bg-white);
-  padding: 0;
-  border-radius: 0 12px 12px 12px;
+  padding: 32px;
+  border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e0e0e0;
-  overflow: hidden;
-  position: relative;
+}
+
+.input-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
 }
 
 .tab {
-  padding: 14px 28px;
-  border: 2px solid #d1d5db;
-  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
-  border-radius: 10px 10px 0 0;
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   transition: all 0.2s ease;
-  position: relative;
-  color: #6b7280;
-  border-bottom: none;
-  margin-bottom: 0;
+  color: #666;
+  text-align: center;
 }
 
 .tab:hover:not(.active) {
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-  color: #374151;
-  border-color: #9ca3af;
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
 .tab.active {
-  background: white;
-  border-color: #e0e0e0;
-  border-bottom: none;
-  color: #667eea;
-  z-index: 10;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: -2px;
-  padding-bottom: 16px;
-}
-
-.form-content {
-  padding: 32px;
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
 .input-group {

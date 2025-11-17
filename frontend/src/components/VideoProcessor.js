@@ -153,8 +153,7 @@ function VideoProcessor({ onProcessed }) {
           </button>
         </div>
         
-        <div className="form-content">
-          <div className="input-group">
+        <div className="input-group">
             {inputType === 'url' ? (
             <input
               type="text"
@@ -276,7 +275,6 @@ function VideoProcessor({ onProcessed }) {
           >
             {loading ? 'Processing...' : 'Analyze Video - Free →'}
           </button>
-        </div>
       </form>
     </div>
   );
