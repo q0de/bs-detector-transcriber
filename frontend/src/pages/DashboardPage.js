@@ -18,10 +18,16 @@ function DashboardPage() {
     const result = location.state?.videoResult;
     if (result?.analysis && typeof result.analysis === 'string') {
       try {
+        console.log('[Initial State] Parsing analysis string...');
         result.analysis = JSON.parse(result.analysis);
+        console.log('[Initial State] Parsed analysis:', result.analysis);
       } catch (e) {
-        console.log('Analysis is plain text, not JSON');
+        console.error('[Initial State] Failed to parse analysis JSON:', e);
+        console.log('[Initial State] Raw analysis:', result.analysis);
       }
+    } else if (result) {
+      console.log('[Initial State] Analysis type:', typeof result.analysis);
+      console.log('[Initial State] Analysis has fact_score?', result.analysis?.fact_score !== undefined);
     }
     return result || null;
   });
@@ -45,10 +51,16 @@ function DashboardPage() {
     // Parse analysis if it's a JSON string
     if (result.analysis && typeof result.analysis === 'string') {
       try {
+        console.log('Parsing analysis string...');
         result.analysis = JSON.parse(result.analysis);
+        console.log('Parsed analysis:', result.analysis);
       } catch (e) {
-        console.log('Analysis is plain text, not JSON');
+        console.error('Failed to parse analysis JSON:', e);
+        console.log('Raw analysis:', result.analysis);
       }
+    } else {
+      console.log('Analysis type:', typeof result.analysis);
+      console.log('Analysis has fact_score?', result.analysis?.fact_score !== undefined);
     }
     setVideoResult(result);
     fetchRecentVideos();
