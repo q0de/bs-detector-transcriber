@@ -1,6 +1,7 @@
 import yt_dlp
 import os
 from anthropic import Anthropic
+from openai import OpenAI
 from datetime import datetime
 import tempfile
 import re
@@ -13,6 +14,7 @@ class VideoProcessor:
         self.whisper_model = None
         self.whisper_module = None
         self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        self.openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         try:
             self.proxy_url = self._get_proxy_url()
             if self.proxy_url:
@@ -793,6 +795,153 @@ Remember: Return ONLY the JSON object, no other text."""
             traceback.print_exc()
             raise Exception(f"Couldn't analyze with AI: {str(e)}")
     
+    def analyze_with_openai(self, transcription, analysis_type):
+        """Analyze transcription with OpenAI GPT-4o (for longer transcripts)"""
+        try:
+            import json
+            
+            # Truncate if too long
+            max_chars = 100000  # OpenAI has higher limits
+            if len(transcription) > max_chars:
+                print(f"⚠️ Transcript too long ({len(transcription)} chars), truncating to {max_chars}")
+                transcription = transcription[:max_chars] + "\n\n[Transcript truncated due to length...]"
+            
+            if analysis_type == 'summarize':
+                prompt = f"""Please provide a comprehensive summary of the following video transcription. Include:
+1. Main topics discussed
+2. Key points and takeaways
+3. Important details
+4. Overall conclusion
+
+Transcription:
+{transcription}"""
+                
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3
+                )
+                return response.choices[0].message.content
+                
+            elif analysis_type == 'fact-check':
+                transcript_length = len(transcription)
+                print(f"📝 Long transcript ({transcript_length} chars) - using OpenAI with JSON mode", flush=True)
+                
+                # For fact-check, use JSON mode for guaranteed valid JSON!
+                system_prompt = """You are a fact-checking assistant that analyzes video transcripts. 
+You return structured JSON data about claims, bias, and fact scores.
+
+CLAIM CATEGORIES:
+- VERIFIED: Factual claims backed by reliable sources
+- OPINION: Subjective judgments, predictions, speculations, or interpretations  
+- UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
+- FALSE: Claims that are demonstrably incorrect or misleading
+
+FACT SCORE GUIDANCE:
+- Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
+- OPINION claims should NOT significantly lower the score (they're subjective, not false)
+- UNCERTAIN claims should have minor impact
+- A video with many opinions but accurate facts should still score 7-9
+- Only penalize heavily for demonstrably FALSE claims"""
+
+                user_prompt = f"""Analyze this transcript and return a JSON object with this exact structure:
+
+{{
+  "fact_score": <number 0-10>,
+  "overall_verdict": "<string: 'Mostly Accurate' | 'Mixed Accuracy' | 'Mostly Inaccurate' | 'Unable to Verify'>",
+  "summary": "<brief 2-3 sentence overview>",
+  "verified_claims": [
+    {{
+      "timestamp": "<MM:SS or 'Throughout'>",
+      "claim": "<exact claim from video>",
+      "verdict": "VERIFIED",
+      "explanation": "<why this is verified>",
+      "sources": ["<URL or source name 1>", "<URL or source name 2>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "opinion_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "OPINION",
+      "explanation": "<why this is subjective/speculative>",
+      "sources": ["<context if any>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "uncertain_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "UNCERTAIN",
+      "explanation": "<why uncertain>",
+      "sources": ["<source if any>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "false_claims": [
+    {{
+      "timestamp": "<MM:SS>",
+      "claim": "<exact claim>",
+      "verdict": "FALSE",
+      "explanation": "<why this is false>",
+      "sources": ["<debunking source 1>", "<debunking source 2>"],
+      "confidence": "<High | Medium | Low>"
+    }}
+  ],
+  "bias_analysis": {{
+    "political_lean": <number -10 to 10, where -10=far left, 0=neutral, 10=far right>,
+    "political_lean_label": "<string>",
+    "emotional_tone": <number 0-10, where 0=neutral/factual, 10=highly emotional/sensational>,
+    "emotional_tone_label": "<string>",
+    "source_quality": <number 0-10, where 0=no sources, 10=peer-reviewed/authoritative>,
+    "source_quality_label": "<string>",
+    "overall_bias": "<Low | Moderate | High>"
+  }},
+  "red_flags": ["<any concerning patterns, logical fallacies, or manipulation tactics>"]
+}}
+
+Transcription:
+{transcription}"""
+
+                print(f"🤖 Sending {len(user_prompt)} characters to OpenAI GPT-4o-mini with JSON mode...")
+                
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format={"type": "json_object"},  # Guaranteed valid JSON!
+                    temperature=0.3
+                )
+                
+                analysis_json = response.choices[0].message.content
+                print(f"✅ Received {len(analysis_json)} characters from OpenAI")
+                
+                # Parse to verify it's valid JSON
+                parsed = json.loads(analysis_json)
+                print(f"✅ OpenAI returned valid JSON with {len(parsed.get('verified_claims', []))} verified claims")
+                
+                # Return the JSON string (will be parsed by caller)
+                return analysis_json
+            
+            else:
+                prompt = f"Analyze the following transcription:\n\n{transcription}"
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3
+                )
+                return response.choices[0].message.content
+                
+        except Exception as e:
+            print(f"❌ OpenAI API error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"Couldn't analyze transcription with OpenAI: {str(e)}")
+    
     def process(self, video_url, analysis_type='summarize'):
         """Process video: try YouTube transcript first, then download+transcribe, then analyze"""
         # Determine platform
@@ -914,9 +1063,17 @@ Remember: Return ONLY the JSON object, no other text."""
                     except:
                         title = 'YouTube Video'
         
-        # Analyze with Claude
-        print("🤖 Analyzing with Claude AI...")
-        analysis = self.analyze_with_claude(transcription, analysis_type)
+        # Choose AI model based on transcript length
+        transcript_length = len(transcription)
+        use_openai = transcript_length >= 15000  # Switch to OpenAI for longer transcripts
+        
+        if use_openai:
+            print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
+            analysis = self.analyze_with_openai(transcription, analysis_type)
+        else:
+            print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
+            analysis = self.analyze_with_claude(transcription, analysis_type)
+        
         print("✅ Analysis complete!")
         
         # For fact-checks, auto-generate highlighted transcript if Claude didn't
