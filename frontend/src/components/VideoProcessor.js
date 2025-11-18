@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { videoAPI } from '../services/api';
 import { supabase } from '../services/supabase';
 import './VideoProcessor.css';
 
-function VideoProcessor({ onProcessed }) {
+function VideoProcessor({ onProcessed, onLoadingChange }) {
   const [inputType, setInputType] = useState('url'); // 'url' or 'file'
   const [url, setUrl] = useState('');
   const [file, setFile] = useState(null);
@@ -16,6 +16,13 @@ function VideoProcessor({ onProcessed }) {
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [processingStatus, setProcessingStatus] = useState('');
   const navigate = useNavigate();
+
+  // Notify parent when loading state changes
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loading, onLoadingChange]);
 
   const fetchVideoMetadata = async (videoUrl) => {
     try {
@@ -89,6 +96,7 @@ function VideoProcessor({ onProcessed }) {
     setError('');
     setInsufficientCredits(null);
     setProcessingStatus('Fetching video info...');
+    console.log('🚀 VideoProcessor: Starting processing, loading set to true');
 
     try {
       // Trim whitespace from URL
@@ -117,9 +125,15 @@ function VideoProcessor({ onProcessed }) {
       
       setProcessingStatus('Analysis complete!');
       
+      // Normalize response data - map video_id to id for consistency
+      const normalizedData = {
+        ...response.data,
+        id: response.data.video_id || response.data.id
+      };
+      
       // Call callback if provided
       if (onProcessed) {
-        onProcessed(response.data);
+        onProcessed(normalizedData);
       }
       
       // Trigger usage update for authenticated users
@@ -130,12 +144,12 @@ function VideoProcessor({ onProcessed }) {
       // Redirect to results with signup prompt for anonymous users
       if (isAnonymous) {
         navigate('/free-trial-result', { state: { 
-          videoResult: response.data,
+          videoResult: normalizedData,
           originalUrl: cleanUrl 
         } });
       } else {
         // Redirect to dashboard with results for authenticated users
-        navigate('/dashboard', { state: { videoResult: response.data } });
+        navigate('/dashboard', { state: { videoResult: normalizedData } });
       }
     } catch (err) {
       // Check if this is an insufficient credits error
@@ -325,10 +339,6 @@ function VideoProcessor({ onProcessed }) {
               <div className="video-info">
                 <h3>{videoMetadata.title}</h3>
                 <p className="video-author">👤 {videoMetadata.author}</p>
-                <div className="processing-status">
-                  <div className="spinner"></div>
-                  <span>{processingStatus}</span>
-                </div>
               </div>
             </div>
           </div>

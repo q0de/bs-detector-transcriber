@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import VideoProcessor from '../components/VideoProcessor';
 import UsageIndicator from '../components/UsageIndicator';
+import ProcessingStatus from '../components/ProcessingStatus';
 import FactCheckScore from '../components/FactCheckScore';
 import ClaimsList from '../components/ClaimsList';
 import BiasScale from '../components/BiasScale';
@@ -33,6 +34,7 @@ function DashboardPage() {
   });
   const [recentVideos, setRecentVideos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showLoginMessage, setShowLoginMessage] = useState(location.state?.loginSuccess || false);
   const [showHistoryMessage, setShowHistoryMessage] = useState(location.state?.fromHistory || false);
   const loginMessage = location.state?.message;
@@ -122,9 +124,16 @@ function DashboardPage() {
 
         <UsageIndicator />
         
+        <ProcessingStatus 
+          isProcessing={isProcessing} 
+          onComplete={() => setIsProcessing(false)}
+        />
+        
         <div className="dashboard-section">
-          <h2>Process a Video</h2>
-          <VideoProcessor onProcessed={handleVideoProcessed} />
+          <VideoProcessor 
+            onProcessed={handleVideoProcessed} 
+            onLoadingChange={setIsProcessing}
+          />
         </div>
         
         {videoResult && (

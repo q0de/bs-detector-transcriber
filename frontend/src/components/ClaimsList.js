@@ -11,7 +11,7 @@ function ClaimItem({ claim, index, type, videoId }) {
   const [showThumbsUp, setShowThumbsUp] = useState(false);
   
   // Debug logging for each claim
-  console.log(`🔍 ClaimItem [${type}] - videoId:`, videoId, 'Will show recheck button?', !!videoId);
+  console.log(`🔍 ClaimItem [${type}] - videoId:`, videoId, 'Will show recheck button?', !!videoId, 'Type:', typeof videoId);
   
   const handleCopy = (e) => {
     e.stopPropagation(); // Don't trigger expand/collapse

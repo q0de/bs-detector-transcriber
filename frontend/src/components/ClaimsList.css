@@ -368,27 +368,26 @@
   }
 }
 
-/* Re-check Button - Matches copy button style */
+/* Re-check Button - Icon button style */
 .claim-actions .claim-recheck {
-  background: #667eea;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
+  font-size: 18px;
   transition: all 0.3s ease;
-  white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .claim-actions .claim-recheck:hover:not(:disabled) {
-  background: #5568d3;
+  background: #e0e0e0;
+  border-color: #ccc;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .claim-actions .claim-recheck.loading {
@@ -406,8 +405,9 @@
 }
 
 .claim-actions .claim-recheck:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
+  background: #f5f5f5;
 }
 
 /* Report Error Button - Subtle, low hierarchy */

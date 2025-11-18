@@ -37,6 +37,13 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
       .replace(/⚠️/g, '[UNCERTAIN]')
       .replace(/❌/g, '[FALSE]');
     
+    // Remove closing tags (they're not needed, we just use opening tags)
+    normalizedText = normalizedText
+      .replace(/\[\/VERIFIED\]/gi, '')
+      .replace(/\[\/OPINION\]/gi, '')
+      .replace(/\[\/UNCERTAIN\]/gi, '')
+      .replace(/\[\/FALSE\]/gi, '');
+    
     // Split by tags and add appropriate spans
     const parts = normalizedText.split(/(\[VERIFIED\]|\[OPINION\]|\[UNCERTAIN\]|\[FALSE\])/g);
     let currentClass = '';

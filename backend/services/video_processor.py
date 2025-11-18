@@ -607,6 +607,20 @@ Remember: Return ONLY the JSON object, no other text."""
                         repaired = repaired.replace(''', "'").replace(''', "'")  # Smart apostrophes
                         repaired = re.sub(r',(\s*[}\]])', r'\1', repaired)  # Trailing commas
                         
+                        # Try to fix missing commas between properties
+                        # Pattern: "key": "value" "nextKey" -> "key": "value", "nextKey"
+                        repaired = re.sub(r'("\s*")(\s*")', r'\1,\2', repaired)
+                        repaired = re.sub(r'("\s*")(\s*\{)', r'\1,\2', repaired)
+                        repaired = re.sub(r'(\}\s*")(\s*")', r'\1,\2', repaired)
+                        repaired = re.sub(r'(\]\s*")(\s*")', r'\1,\2', repaired)
+                        
+                        # Try to fix missing commas - more aggressive approach
+                        # Look for patterns like: "key": value "nextKey" (missing comma)
+                        repaired = re.sub(r'(")\s*("\s*:)', r'\1,\2', repaired)  # Missing comma before next key
+                        repaired = re.sub(r'(\d+)\s*(")', r'\1,\2', repaired)  # Number followed by quote
+                        repaired = re.sub(r'(true|false|null)\s*(")', r'\1,\2', repaired)  # Boolean/null followed by quote
+                        
+                        # Try parsing
                         parsed = json.loads(repaired)
                         print(f"✅ Successfully repaired and parsed JSON")
                         
@@ -618,6 +632,41 @@ Remember: Return ONLY the JSON object, no other text."""
                         return parsed
                     except Exception as e2:
                         print(f"❌ JSON repair failed: {str(e2)}")
+                        
+                        # Last resort: Try to extract error location and fix it
+                        error_match = re.search(r'line (\d+) column (\d+)', str(e2))
+                        if error_match:
+                            line_num = int(error_match.group(1))
+                            col_num = int(error_match.group(2))
+                            print(f"🔧 Error at line {line_num}, column {col_num} - attempting targeted fix...")
+                            
+                            try:
+                                lines = repaired.split('\n')
+                                if line_num <= len(lines):
+                                    error_line = lines[line_num - 1]
+                                    # Try inserting comma before the problematic position
+                                    if col_num < len(error_line):
+                                        # Look for pattern: value "nextKey" and insert comma
+                                        before_error = error_line[:col_num]
+                                        after_error = error_line[col_num:]
+                                        # Try to find where to insert comma
+                                        if '"' in after_error and not before_error.rstrip().endswith(','):
+                                            # Insert comma before the quote
+                                            quote_pos = after_error.find('"')
+                                            if quote_pos > 0:
+                                                fixed_line = before_error + after_error[:quote_pos] + ',' + after_error[quote_pos:]
+                                                lines[line_num - 1] = fixed_line
+                                                repaired = '\n'.join(lines)
+                                                parsed = json.loads(repaired)
+                                                print(f"✅ Fixed JSON at error location")
+                                                
+                                                # Normalize
+                                                if 'opinion_based_claims' in parsed and 'opinion_claims' not in parsed:
+                                                    parsed['opinion_claims'] = parsed.pop('opinion_based_claims')
+                                                return parsed
+                            except Exception as e3:
+                                print(f"❌ Targeted fix also failed: {str(e3)}")
+                        
                         print("⚠️ Returning raw text - analysis may be incomplete")
                         # Fall back to returning raw text
                         return analysis
