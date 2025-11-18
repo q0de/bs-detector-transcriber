@@ -25,24 +25,29 @@ def process_video_free():
         # Initialize video processor
         processor = get_video_processor()
         
-        # Step 1: Get metadata
-        print("📊 Step 1: Getting video metadata...")
-        metadata = processor.get_video_metadata(video_url)
-        print(f"✅ Metadata retrieved: {metadata.get('title', 'Unknown')}")
+        # Process video (gets metadata, transcript, and analysis in one call)
+        print("📊 Processing video (metadata + transcript + analysis)...")
+        result = processor.process(video_url, analysis_type='summarize')
         
-        # Step 2: Get transcript
-        print("📝 Step 2: Getting transcript...")
-        transcript_result = processor.get_transcript(video_url)
-        transcription = transcript_result['transcript']
-        print(f"✅ Transcript retrieved ({len(transcription)} chars)")
+        # Extract data from result
+        transcription = result.get('transcription', '')
+        analysis = result.get('analysis', {})
+        title = result.get('title', 'Unknown Video')
+        duration_minutes = result.get('duration_minutes', 0)
+        platform = result.get('platform', 'youtube')
+        creator_info = result.get('creator_info', {})
         
-        # Step 3: Analyze (summarize only for free users)
-        print("🤖 Step 3: Analyzing with AI (SUMMARIZE mode)...")
-        analysis = processor.analyze_transcript(
-            transcription=transcription,
-            analysis_type='summarize'
-        )
-        print("✅ Analysis complete")
+        # Build metadata object
+        metadata = {
+            'title': title,
+            'duration': duration_minutes * 60,  # Convert to seconds
+            'platform': platform,
+            'creator': creator_info.get('name') if creator_info else None,
+            'channel_id': creator_info.get('platform_id') if creator_info else None,
+            'channel_url': creator_info.get('channel_url') if creator_info else None,
+        }
+        
+        print(f"✅ Processing complete: {title} ({duration_minutes:.1f} min)")
         
         # Return results without saving to database
         return jsonify({
@@ -52,9 +57,9 @@ def process_video_free():
             'analysis': analysis,
             'transcription': transcription,
             'metadata': metadata,
-            'platform': metadata.get('platform', 'youtube'),
-            'duration_minutes': metadata.get('duration', 0) / 60,
-            'title': metadata.get('title', 'Unknown Video'),
+            'platform': platform,
+            'duration_minutes': duration_minutes,
+            'title': title,
             'message': 'Free analysis complete! Sign up to save results and unlock fact-checking.'
         }), 200
         
