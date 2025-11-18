@@ -36,17 +36,31 @@ def signup():
                 return jsonify({'success': False, 'error': 'Email already exists'}), 400
             return jsonify({'success': False, 'error': f'Signup failed: {error_msg}'}), 400
         
-        # Create user record in database
+        # Create user record in database (if trigger didn't already create it)
         if response.user:
-            # Insert user into users table
-            supabase.table('users').insert({
-                'id': response.user.id,
-                'email': email,
-                'subscription_tier': 'free',
-                'subscription_status': 'active',
-                'monthly_minute_limit': 60,
-                'minutes_used_this_month': 0
-            }).execute()
+            # Check if user already exists (trigger may have created it)
+            user_check = supabase.table('users').select('id').eq('id', response.user.id).execute()
+            
+            if not user_check.data:
+                # Only insert if user doesn't exist (trigger may have failed or not run yet)
+                try:
+                    supabase.table('users').insert({
+                        'id': response.user.id,
+                        'email': email,
+                        'subscription_tier': 'free',
+                        'subscription_status': 'active',
+                        'monthly_minute_limit': 60,
+                        'minutes_used_this_month': 0
+                    }).execute()
+                except Exception as insert_error:
+                    # If insert fails due to duplicate key, user was likely created by trigger
+                    error_str = str(insert_error)
+                    if '23505' in error_str or 'duplicate key' in error_str.lower():
+                        print(f"✅ User already exists (likely created by trigger): {response.user.id}")
+                        # User exists, continue normally
+                    else:
+                        # Some other error, re-raise it
+                        raise
             
             return jsonify({
                 'success': True,
@@ -61,9 +75,16 @@ def signup():
             
     except Exception as e:
         error_msg = str(e)
-        if 'already registered' in error_msg.lower():
-            return jsonify({'success': False, 'error': 'Email already exists'}), 400
-        return jsonify({'success': False, 'error': error_msg}), 400
+        print(f"Signup exception: {error_msg}")  # Debug logging
+        
+        # Handle duplicate key errors (user already exists)
+        if '23505' in error_msg or 'duplicate key' in error_msg.lower():
+            return jsonify({'success': False, 'error': 'An account with this email already exists. Please try logging in instead.'}), 400
+        
+        if 'already registered' in error_msg.lower() or 'already exists' in error_msg.lower():
+            return jsonify({'success': False, 'error': 'Email already exists. Please try logging in instead.'}), 400
+        
+        return jsonify({'success': False, 'error': f'Signup failed: {error_msg[:200]}'}), 400
 
 @bp.route('/login', methods=['POST'])
 def login():
@@ -88,15 +109,25 @@ def login():
             # Ensure user record exists in database
             user_check = supabase.table('users').select('id').eq('id', response.user.id).execute()
             if not user_check.data:
-                # Create user record if doesn't exist
-                supabase.table('users').insert({
-                    'id': response.user.id,
-                    'email': email,
-                    'subscription_tier': 'free',
-                    'subscription_status': 'active',
-                    'monthly_minute_limit': 60,
-                    'minutes_used_this_month': 0
-                }).execute()
+                # Create user record if doesn't exist (trigger may have failed)
+                try:
+                    supabase.table('users').insert({
+                        'id': response.user.id,
+                        'email': email,
+                        'subscription_tier': 'free',
+                        'subscription_status': 'active',
+                        'monthly_minute_limit': 60,
+                        'minutes_used_this_month': 0
+                    }).execute()
+                except Exception as insert_error:
+                    # If insert fails due to duplicate key, user was likely created by trigger
+                    error_str = str(insert_error)
+                    if '23505' in error_str or 'duplicate key' in error_str.lower():
+                        print(f"✅ User already exists (likely created by trigger): {response.user.id}")
+                        # User exists, continue normally
+                    else:
+                        # Some other error, re-raise it
+                        raise
             
             return jsonify({
                 'success': True,
