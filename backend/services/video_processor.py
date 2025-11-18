@@ -4,6 +4,7 @@ from anthropic import Anthropic
 from datetime import datetime
 import tempfile
 import re
+import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
@@ -54,6 +55,22 @@ class VideoProcessor:
             import traceback
             traceback.print_exc()
             return None
+    
+    def _get_proxy_urls(self):
+        """Get both HTTP and SOCKS5 proxy URLs (IPRoyal supports both)"""
+        base_url = self.proxy_url
+        if not base_url:
+            return None, None
+        
+        # If it's already a full URL, extract components
+        if base_url.startswith('http://'):
+            # Extract: http://user:pass@host:port
+            http_proxy = base_url
+            # Try SOCKS5 format: socks5://user:pass@host:port
+            socks5_proxy = base_url.replace('http://', 'socks5://')
+            return http_proxy, socks5_proxy
+        
+        return base_url, None
     
     def auto_highlight_transcript(self, transcript, analysis):
         """Automatically add highlight tags to transcript based on claims"""
@@ -162,8 +179,30 @@ class VideoProcessor:
             
             # Use the API for version 1.2.3 - create instance and use list() method
             try:
-                api = YouTubeTranscriptApi()
-                transcript_list = api.list(video_id)
+                # Set proxy environment variables temporarily for youtube-transcript-api
+                # The library uses requests internally, which respects HTTP_PROXY/HTTPS_PROXY
+                old_http_proxy = os.environ.get('HTTP_PROXY')
+                old_https_proxy = os.environ.get('HTTPS_PROXY')
+                
+                if self.proxy_url:
+                    print(f"🌐 Using proxy for YouTube transcript API...")
+                    os.environ['HTTP_PROXY'] = self.proxy_url
+                    os.environ['HTTPS_PROXY'] = self.proxy_url
+                
+                try:
+                    api = YouTubeTranscriptApi()
+                    transcript_list = api.list(video_id)
+                finally:
+                    # Restore original proxy settings
+                    if old_http_proxy is not None:
+                        os.environ['HTTP_PROXY'] = old_http_proxy
+                    elif 'HTTP_PROXY' in os.environ:
+                        del os.environ['HTTP_PROXY']
+                    
+                    if old_https_proxy is not None:
+                        os.environ['HTTPS_PROXY'] = old_https_proxy
+                    elif 'HTTPS_PROXY' in os.environ:
+                        del os.environ['HTTPS_PROXY']
                 
                 # Try to find English transcript
                 transcript = None
@@ -218,8 +257,9 @@ class VideoProcessor:
     def estimate_duration(self, video_url):
         """Estimate video duration without downloading"""
         try:
-            # Use proxy from instance variable
-            proxy_url = self.proxy_url
+            # Get both HTTP and SOCKS5 proxy URLs
+            http_proxy, socks5_proxy = self._get_proxy_urls()
+            proxy_url = http_proxy  # Default to HTTP
             
             ydl_opts = {
                 'quiet': True,
@@ -233,23 +273,40 @@ class VideoProcessor:
                 },
                 # Rotate user agents
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-us,en;q=0.5',
-                    'Sec-Fetch-Mode': 'navigate',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
                 },
             }
             
             # Add proxy if configured
             if proxy_url:
-                print(f"🌐 Using proxy for duration estimation...")
+                print(f"🌐 Using proxy for duration estimation (HTTP)...")
                 ydl_opts['proxy'] = proxy_url
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
-                duration = info.get('duration', 0)
-                print(f"✅ Duration estimated: {duration}s ({duration/60:.1f} min)")
-                return duration
+            # Try HTTP proxy first
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(video_url, download=False)
+                    duration = info.get('duration', 0)
+                    print(f"✅ Duration estimated: {duration}s ({duration/60:.1f} min)")
+                    return duration
+            except Exception as http_error:
+                # If HTTP proxy fails with 403, try SOCKS5
+                if socks5_proxy and ('403' in str(http_error) or ('Forbidden' in str(http_error))):
+                    print(f"🔄 HTTP proxy failed for duration, trying SOCKS5...")
+                    ydl_opts['proxy'] = socks5_proxy
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(video_url, download=False)
+                        duration = info.get('duration', 0)
+                        print(f"✅ Duration estimated: {duration}s ({duration/60:.1f} min)")
+                        return duration
+                else:
+                    raise http_error
         except Exception as e:
             print(f"❌ Duration estimation failed: {str(e)}")
             raise Exception(f"Couldn't estimate duration: {str(e)}")
@@ -257,8 +314,9 @@ class VideoProcessor:
     def download_video(self, video_url, output_path):
         """Download video using yt-dlp with anti-bot measures and optional proxy"""
         try:
-            # Use proxy from instance variable
-            proxy_url = self.proxy_url
+            # Get both HTTP and SOCKS5 proxy URLs
+            http_proxy, socks5_proxy = self._get_proxy_urls()
+            proxy_url = http_proxy  # Default to HTTP
             
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -274,23 +332,38 @@ class VideoProcessor:
                 },
                 # Rotate user agents
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-us,en;q=0.5',
-                    'Sec-Fetch-Mode': 'navigate',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
                 },
             }
             
             # Add proxy if configured (helps bypass datacenter IP blocking)
             if proxy_url:
-                print(f"🌐 Using residential proxy for download...")
+                print(f"🌐 Using residential proxy for download (HTTP)...")
                 ydl_opts['proxy'] = proxy_url
             else:
                 print(f"⚠️ No proxy configured - datacenter IPs may be blocked by YouTube")
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=True)
-                return info
+            # Try HTTP proxy first
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(video_url, download=True)
+                    return info
+            except Exception as http_error:
+                # If HTTP proxy fails with 403, try SOCKS5
+                if socks5_proxy and ('403' in str(http_error) or ('Forbidden' in str(http_error))):
+                    print(f"🔄 HTTP proxy failed, trying SOCKS5 proxy...")
+                    ydl_opts['proxy'] = socks5_proxy
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(video_url, download=True)
+                        return info
+                else:
+                    raise http_error
         except Exception as e:
             raise Exception(f"Couldn't download video: {str(e)}")
     
