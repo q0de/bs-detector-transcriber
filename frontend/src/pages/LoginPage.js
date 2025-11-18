@@ -6,8 +6,8 @@ import GoogleSignInButton from '../components/GoogleSignInButton';
 import './AuthPage.css';
 
 function LoginPage() {
-  const [email, setEmail] = useState('testuser@gmail.com'); // Prefilled for testing
-  const [password, setPassword] = useState('testpass123'); // Prefilled for testing
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

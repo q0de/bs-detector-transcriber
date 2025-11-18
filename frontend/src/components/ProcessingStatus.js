@@ -9,7 +9,7 @@ function ProcessingStatus({ isProcessing, onComplete }) {
     { emoji: '🎬', text: 'Starting video processing...', delay: 0 },
     { emoji: '🎯', text: 'Fetching transcript...', delay: 1000 },
     { emoji: '✅', text: 'Transcript retrieved', delay: 2000 },
-    { emoji: '🤖', text: 'Analyzing with Claude AI...', delay: 3000 },
+    { emoji: '🤖', text: 'Analyzing with AI...', delay: 3000 },
     { emoji: '📝', text: 'Generating highlights...', delay: 4000 },
     { emoji: '🎨', text: 'Adding claim tags...', delay: 5000 },
     { emoji: '✨', text: 'Wrapping up...', delay: 5500 },
