@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from './supabase';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -12,8 +13,25 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
+  async (config) => {
+    // First try localStorage
+    let token = localStorage.getItem('access_token');
+    
+    // If no token in localStorage, try to get from Supabase session
+    if (!token) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          token = session.access_token;
+          // Sync to localStorage for future requests
+          localStorage.setItem('access_token', token);
+          localStorage.setItem('user', JSON.stringify(session.user));
+        }
+      } catch (err) {
+        console.error('Failed to get Supabase session:', err);
+      }
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,9 +47,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Only redirect if not already on login/signup page
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/signup') && !currentPath.includes('/auth/callback')) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        // Use replace to avoid adding to history
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(error);
   }

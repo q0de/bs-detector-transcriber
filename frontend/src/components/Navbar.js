@@ -113,14 +113,28 @@ function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
+      // Sync token to localStorage whenever session changes
+      if (session?.access_token) {
+        localStorage.setItem('access_token', session.access_token);
+        localStorage.setItem('user', JSON.stringify(session.user));
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+      }
+      
       // Only update state for actual auth events, not INITIAL_SESSION with no session
       if (event !== 'INITIAL_SESSION' || session?.user) {
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Refetch user details on auth change
-          userAPI.getCurrentUser()
-            .then(res => setUserDetails(res.data))
-            .catch(console.error);
+          // Small delay to ensure token is synced before API call
+          setTimeout(() => {
+            userAPI.getCurrentUser()
+              .then(res => setUserDetails(res.data))
+              .catch(err => {
+                console.error('Failed to fetch user details:', err);
+                // Don't clear user on 401 - let the API interceptor handle it
+              });
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           // Only clear on explicit sign out
           setUserDetails(null);
