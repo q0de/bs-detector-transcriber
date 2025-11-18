@@ -141,8 +141,16 @@ def process_video():
         # Process video (use cached transcript if available)
         if existing_transcript:
             print("🔄 Reusing cached transcript - only running new analysis!")
-            # Only run Claude analysis with the existing transcript
-            analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
+            # Choose AI model based on transcript length
+            transcript_length = len(existing_transcript)
+            use_openai = transcript_length >= 12000  # Switch to OpenAI to avoid Claude truncation issues
+            
+            if use_openai:
+                print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
+                analysis = processor.analyze_with_openai(existing_transcript, analysis_type)
+            else:
+                print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
+                analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
             
             # For fact-checks, auto-generate highlighted transcript if Claude didn't
             if analysis_type == 'fact-check' and isinstance(analysis, dict):
