@@ -539,9 +539,9 @@ Transcription:
                 # Determine if transcript is short enough for Claude to add inline highlights
                 # Claude max_tokens: 8000 ≈ 32,000 chars max output
                 # Need space for: transcript + highlights (~+20%) + JSON structure (~2000 tokens)
-                # Safe limit: ~12,000 chars = ~3,000 tokens transcript + ~2,000 tokens JSON = ~5,000 tokens total
+                # Increased limit: ~20,000 chars = ~5,000 tokens transcript + ~2,000 tokens JSON = ~7,000 tokens total
                 transcript_length = len(transcription)
-                include_highlights_instruction = transcript_length < 12000
+                include_highlights_instruction = transcript_length < 20000
                 
                 if include_highlights_instruction:
                     highlights_instruction = '"full_transcript_with_highlights": "<REQUIRED: Return the COMPLETE, WORD-FOR-WORD transcript (every single word from the original transcription above) with TEXT TAGS [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] inserted BEFORE each corresponding claim. Do NOT summarize, do NOT truncate, do NOT skip any words. Include the ENTIRE transcript exactly as provided, just with tags added. Use ONLY the tag format [VERIFIED] NOT emojis. Do NOT omit this field.>"'
