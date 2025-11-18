@@ -15,6 +15,19 @@ function AuthCallbackPage() {
         console.log('🔄 Starting OAuth callback handling...');
         console.log('📍 Current URL:', window.location.href);
         
+        // Check if we already have a session (prevent loops)
+        const { data: existingSession } = await supabase.auth.getSession();
+        if (existingSession?.session) {
+          console.log('✅ Session already exists, redirecting to dashboard...');
+          localStorage.setItem('access_token', existingSession.session.access_token);
+          localStorage.setItem('user', JSON.stringify(existingSession.session.user));
+          setStatus('success');
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true, state: { loginSuccess: true } });
+          }, 100);
+          return;
+        }
+        
         // IMPORTANT: For OAuth, we need to check the URL hash for the session
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
@@ -24,6 +37,9 @@ function AuthCallbackPage() {
         console.log('🔑 Hash params - refresh_token exists?', !!refreshToken);
 
         if (accessToken) {
+          // Immediately clear the URL hash for security/UX
+          window.history.replaceState(null, '', window.location.pathname);
+          
           // Set the session from hash params
           const { data: sessionData, error: setError } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -47,11 +63,12 @@ function AuthCallbackPage() {
             // Check if this is a new user (created_at is recent)
             const isNewUser = new Date(sessionData.session.user.created_at).getTime() > Date.now() - 10000;
 
-            // Navigate to dashboard with success message
+            // Navigate to dashboard immediately (use replace to avoid callback URL in history)
             setStatus('success');
             console.log('✅ Navigating to dashboard...');
             setTimeout(() => {
               navigate('/dashboard', {
+                replace: true, // Replace callback URL in history
                 state: {
                   loginSuccess: true,
                   message: isNewUser 
@@ -59,7 +76,7 @@ function AuthCallbackPage() {
                     : `Welcome back, ${sessionData.session.user.email}!`,
                 }
               });
-            }, 500);
+            }, 300); // Faster redirect
             return;
           }
         }
@@ -86,17 +103,21 @@ function AuthCallbackPage() {
           setStatus('success');
           setTimeout(() => {
             navigate('/dashboard', {
+              replace: true,
               state: {
                 loginSuccess: true,
                 message: `Welcome back, ${data.session.user.email}!`,
               }
             });
-          }, 500);
+          }, 300);
         } else {
-          // No session found - might be an error
-          console.error('❌ No session found anywhere');
+          // No session found and no hash params - redirect to login
+          console.error('❌ No session found and no OAuth data in URL');
           setStatus('error');
           setErrorMessage('No session found. Please try signing in again.');
+          setTimeout(() => {
+            navigate('/login', { replace: true });
+          }, 2000);
         }
       } catch (err) {
         console.error('❌ Unexpected error in OAuth callback:', err);
