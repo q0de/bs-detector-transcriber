@@ -95,6 +95,16 @@ def get_creator_badge(creator_id):
 def get_video_badge(video_id):
     """Generate SVG badge for a video"""
     try:
+        # Validate video_id is not undefined or empty
+        if not video_id or video_id == 'undefined' or video_id.strip() == '':
+            return Response('Invalid video ID', status=400)
+        
+        # Validate UUID format (basic check)
+        import re
+        uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+        if not uuid_pattern.match(video_id):
+            return Response('Invalid video ID format', status=400)
+        
         # Get video data
         video_response = supabase.table('videos').select('title, analysis').eq('id', video_id).execute()
         

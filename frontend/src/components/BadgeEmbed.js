@@ -6,6 +6,11 @@ function BadgeEmbed({ videoId, creatorId }) {
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
   
+  // Don't render if videoId is missing or undefined
+  if (!videoId || videoId === 'undefined') {
+    return null;
+  }
+  
   const videoBadgeUrl = `${API_URL}/badges/video/${videoId}`;
   const creatorBadgeUrl = creatorId ? `${API_URL}/badges/creator/${creatorId}` : null;
 
