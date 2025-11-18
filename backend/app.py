@@ -132,18 +132,21 @@ def health():
 def test_proxy():
     """Test endpoint to check proxy configuration"""
     import os
-    from services.video_processor import VideoProcessor
     
     try:
-        # Check environment variables
+        # Check environment variables directly (don't initialize VideoProcessor to avoid crashes)
         proxy_host = os.environ.get('PROXY_HOST')
         proxy_port = os.environ.get('PROXY_PORT')
         proxy_username = os.environ.get('PROXY_USERNAME')
         proxy_password = os.environ.get('PROXY_PASSWORD')
         proxy_url = os.environ.get('PROXY_URL')
         
-        # Try to initialize VideoProcessor to see what it detects
-        processor = VideoProcessor()
+        # Build proxy URL the same way VideoProcessor does
+        built_proxy_url = None
+        if proxy_url:
+            built_proxy_url = proxy_url
+        elif proxy_host and proxy_port and proxy_username and proxy_password:
+            built_proxy_url = f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
         
         result = {
             'proxy_url_set': bool(proxy_url),
@@ -151,13 +154,13 @@ def test_proxy():
             'proxy_port_set': bool(proxy_port),
             'proxy_username_set': bool(proxy_username),
             'proxy_password_set': bool(proxy_password),
-            'processor_proxy_detected': bool(processor.proxy_url),
-            'processor_proxy_url': processor.proxy_url.split('@')[1] if processor.proxy_url and '@' in processor.proxy_url else None
+            'proxy_configured': bool(built_proxy_url),
+            'proxy_url_preview': built_proxy_url.split('@')[1] if built_proxy_url and '@' in built_proxy_url else None
         }
         
         return jsonify({
             'success': True,
-            'proxy_configured': bool(processor.proxy_url),
+            'proxy_configured': bool(built_proxy_url),
             'details': result
         }), 200
     except Exception as e:
