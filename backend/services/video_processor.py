@@ -566,7 +566,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
       "claim": "<exact claim from video>",
       "verdict": "VERIFIED",
       "explanation": "<why this is verified>",
-      "sources": ["<source 1>", "<source 2>"],
+      "sources": ["<ACTUAL URL like https://example.com/article>", "<ACTUAL URL>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -576,7 +576,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
       "claim": "<exact claim>",
       "verdict": "OPINION",
       "explanation": "<why this is subjective/speculative>",
-      "sources": ["<relevant context if any>"],
+      "sources": ["<ACTUAL URL if relevant context exists>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -586,7 +586,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
       "claim": "<exact claim>",
       "verdict": "UNCERTAIN",
       "explanation": "<why uncertain - lack of evidence but not disproven>",
-      "sources": ["<source if any>"],
+      "sources": ["<ACTUAL URL if source exists>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -596,7 +596,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
       "claim": "<exact claim>",
       "verdict": "FALSE",
       "explanation": "<why this is false>",
-      "sources": ["<debunking source 1>", "<debunking source 2>"],
+      "sources": ["<ACTUAL URL like https://snopes.com/fact-check/...>", "<ACTUAL URL>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -618,6 +618,12 @@ CLAIM CATEGORIES:
 - OPINION: Subjective judgments, predictions, speculations, or interpretations (e.g., "I think", "will be", "worst ever", personal beliefs)
 - UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
 - FALSE: Claims that are demonstrably incorrect or misleading
+
+SOURCES:
+- ALWAYS provide ACTUAL URLs (e.g., https://www.reuters.com/article/..., https://www.ncbi.nlm.nih.gov/..., https://snopes.com/fact-check/...)
+- DO NOT use descriptive names like "Reuters article" or "CDC website"
+- Use full clickable links that users can verify
+- If no URL is available, use an empty array []
 
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
@@ -837,6 +843,12 @@ CLAIM CATEGORIES:
 - UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
 - FALSE: Claims that are demonstrably incorrect or misleading
 
+SOURCES:
+- ALWAYS provide ACTUAL URLs (e.g., https://www.reuters.com/article/..., https://www.ncbi.nlm.nih.gov/..., https://snopes.com/fact-check/...)
+- DO NOT use descriptive names like "Reuters article" or "CDC website"
+- Use full clickable links that users can verify
+- If no URL is available, use an empty array []
+
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
 - OPINION claims should NOT significantly lower the score (they're subjective, not false)
@@ -856,7 +868,7 @@ FACT SCORE GUIDANCE:
       "claim": "<exact claim from video>",
       "verdict": "VERIFIED",
       "explanation": "<why this is verified>",
-      "sources": ["<URL or source name 1>", "<URL or source name 2>"],
+      "sources": ["<ACTUAL URL like https://example.com/article>", "<ACTUAL URL>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -866,7 +878,7 @@ FACT SCORE GUIDANCE:
       "claim": "<exact claim>",
       "verdict": "OPINION",
       "explanation": "<why this is subjective/speculative>",
-      "sources": ["<context if any>"],
+      "sources": ["<ACTUAL URL if relevant context exists>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -876,7 +888,7 @@ FACT SCORE GUIDANCE:
       "claim": "<exact claim>",
       "verdict": "UNCERTAIN",
       "explanation": "<why uncertain>",
-      "sources": ["<source if any>"],
+      "sources": ["<ACTUAL URL if source exists>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -886,7 +898,7 @@ FACT SCORE GUIDANCE:
       "claim": "<exact claim>",
       "verdict": "FALSE",
       "explanation": "<why this is false>",
-      "sources": ["<debunking source 1>", "<debunking source 2>"],
+      "sources": ["<ACTUAL URL like https://snopes.com/fact-check/...>", "<ACTUAL URL>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
@@ -1065,7 +1077,7 @@ Transcription:
         
         # Choose AI model based on transcript length
         transcript_length = len(transcription)
-        use_openai = transcript_length >= 15000  # Switch to OpenAI for longer transcripts
+        use_openai = transcript_length >= 12000  # Switch to OpenAI to avoid Claude truncation issues
         
         if use_openai:
             print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
