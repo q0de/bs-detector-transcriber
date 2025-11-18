@@ -69,8 +69,26 @@ def process_video_free():
         traceback.print_exc()
         
         error_message = str(e)
-        if 'sign in to confirm' in error_message.lower() or 'bot' in error_message.lower():
-            error_message = "This video is age-restricted or requires sign-in. Please try a different video."
+        error_lower = error_message.lower()
+        
+        # Detect specific error types and provide helpful messages
+        if any(keyword in error_lower for keyword in [
+            'sign in to confirm', 'age-restricted', 'age restricted', 
+            'private video', 'video unavailable', 'video is private',
+            'this video is not available', 'unavailable in your country'
+        ]):
+            error_message = "This video is age-restricted, private, or unavailable. Please try a different video."
+        elif any(keyword in error_lower for keyword in [
+            'bot', 'automated', 'blocked', 'forbidden', '403', '429'
+        ]):
+            error_message = "This video cannot be accessed right now. YouTube may be blocking automated access. Please try again later or use a different video."
+        elif 'transcript' in error_lower and 'not available' in error_lower:
+            error_message = "This video doesn't have captions/transcripts available. Please try a video with captions enabled."
+        elif 'not found' in error_lower or 'invalid' in error_lower:
+            error_message = "Video not found. Please check the URL and try again."
+        else:
+            # Keep original error for debugging, but make it user-friendly
+            error_message = f"Unable to process this video: {error_message[:200]}"
         
         return jsonify({
             'success': False,
