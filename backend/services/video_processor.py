@@ -1082,13 +1082,17 @@ Transcription:
         if use_openai:
             print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
             analysis = self.analyze_with_openai(transcription, analysis_type)
+            # OpenAI returns JSON string, parse it to dict for highlight processing
+            if analysis_type == 'fact-check' and isinstance(analysis, str):
+                import json
+                analysis = json.loads(analysis)
         else:
             print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
             analysis = self.analyze_with_claude(transcription, analysis_type)
         
         print("✅ Analysis complete!")
         
-        # For fact-checks, auto-generate highlighted transcript if Claude didn't
+        # For fact-checks, auto-generate highlighted transcript if OpenAI or Claude didn't
         highlighted_transcript = None
         if analysis_type == 'fact-check' and isinstance(analysis, dict):
             # Check if Claude already added highlights

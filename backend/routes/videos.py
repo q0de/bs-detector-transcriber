@@ -148,11 +148,15 @@ def process_video():
             if use_openai:
                 print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
                 analysis = processor.analyze_with_openai(existing_transcript, analysis_type)
+                # OpenAI returns JSON string, parse it to dict for highlight processing
+                if isinstance(analysis, str):
+                    import json
+                    analysis = json.loads(analysis)
             else:
                 print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
                 analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
             
-            # For fact-checks, auto-generate highlighted transcript if Claude didn't
+            # For fact-checks, auto-generate highlighted transcript if OpenAI or Claude didn't
             if analysis_type == 'fact-check' and isinstance(analysis, dict):
                 # Check if Claude already added highlights
                 claude_highlights = analysis.get('full_transcript_with_highlights')
