@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.supabase_client import get_supabase_client
+from services.slack_notifier import notify_new_signup
 
 bp = Blueprint('auth', __name__)
 
@@ -61,6 +62,12 @@ def signup():
                     else:
                         # Some other error, re-raise it
                         raise
+            
+            # Send Slack notification for new signup
+            try:
+                notify_new_signup(email, response.user.id, signup_method="email")
+            except Exception as slack_error:
+                print(f"⚠️ Slack notification failed (non-critical): {str(slack_error)}")
             
             return jsonify({
                 'success': True,

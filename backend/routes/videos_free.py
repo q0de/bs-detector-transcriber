@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from services.slack_notifier import notify_video_upload
 
 bp = Blueprint('videos_free', __name__)
 
@@ -49,6 +50,19 @@ def process_video_free():
         
         print(f"✅ Processing complete: {title} ({duration_minutes:.1f} min)")
         
+        # Send Slack notification for anonymous video upload
+        try:
+            notify_video_upload(
+                email=None,  # Anonymous user
+                video_url=video_url,
+                video_title=title,
+                duration_minutes=duration_minutes,
+                analysis_type='summarize (free)',
+                user_id=None
+            )
+        except Exception as slack_error:
+            print(f"⚠️ Slack notification failed (non-critical): {str(slack_error)}")
+        
         # Return results without saving to database
         return jsonify({
             'success': True,
@@ -73,13 +87,17 @@ def process_video_free():
         
         # Detect specific error types and provide helpful messages
         if any(keyword in error_lower for keyword in [
-            'sign in to confirm', 'age-restricted', 'age restricted', 
+            'sign in to confirm', 'bot', 'ipblocked', 'ip blocked'
+        ]):
+            error_message = "YouTube is temporarily blocking access due to bot detection. Please try again in a few minutes or try a different video."
+        elif any(keyword in error_lower for keyword in [
+            'age-restricted', 'age restricted', 
             'private video', 'video unavailable', 'video is private',
             'this video is not available', 'unavailable in your country'
         ]):
             error_message = "This video is age-restricted, private, or unavailable. Please try a different video."
         elif any(keyword in error_lower for keyword in [
-            'bot', 'automated', 'blocked', 'forbidden', '403', '429'
+            'automated', 'blocked', 'forbidden', '403', '429'
         ]):
             error_message = "This video cannot be accessed right now. YouTube may be blocking automated access. Please try again later or use a different video."
         elif 'transcript' in error_lower and 'not available' in error_lower:

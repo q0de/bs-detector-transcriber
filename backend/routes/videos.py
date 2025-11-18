@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from middleware.auth_middleware import verify_token
 from services.supabase_client import get_supabase_client
+from services.slack_notifier import notify_video_upload
 from datetime import datetime
 import math
 import os
@@ -46,7 +47,8 @@ def process_video():
             return jsonify({'success': False, 'error': 'User not found'}), 404
         
         user = user_response.data[0]
-        print(f"✅ User found: {user.get('email')}")
+        user_email = user.get('email', 'Unknown')
+        print(f"✅ User found: {user_email}")
         
         # Check if we already have a transcript for this video URL
         print(f"Checking for existing transcript for URL: {video_url}")
@@ -321,6 +323,19 @@ def process_video():
         video_response = supabase.table('videos').insert(video_data).execute()
         video_id = video_response.data[0]['id'] if video_response.data else None
         
+        # Send Slack notification for video upload
+        try:
+            notify_video_upload(
+                email=user_email,
+                video_url=video_url,
+                video_title=result.get('title', 'Untitled'),
+                duration_minutes=result['duration_minutes'],
+                analysis_type=analysis_type,
+                user_id=user_id
+            )
+        except Exception as slack_error:
+            print(f"⚠️ Slack notification failed (non-critical): {str(slack_error)}")
+        
         # Update user minutes
         new_used = used + actual_minutes
         supabase.table('users').update({
@@ -380,12 +395,20 @@ def process_video():
         traceback.print_exc()
         
         # Specific error messages for common issues
-        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower() or 'proxy' in error_msg.lower() or 'tunnel connection' in error_msg.lower():
-            print("⚠️ Detected download/access error - video unavailable")
+        if 'bot' in error_msg.lower() or 'sign in' in error_msg.lower() or 'ipblocked' in error_msg.lower() or 'ip blocked' in error_msg.lower():
+            print("⚠️ Detected YouTube IP blocking/bot detection")
             return jsonify({
                 'success': False,
-                'error': 'This video doesn\'t have transcripts available and cannot be downloaded. Please try a video with captions/subtitles enabled.',
-                'suggestion': 'Most news videos, educational content, and popular channels have transcripts and will work great!'
+                'error': 'YouTube is temporarily blocking access to this video due to bot detection. This is a temporary issue with YouTube\'s anti-bot measures.',
+                'suggestion': 'Please try again in a few minutes, or try a different video. Most videos will work once the temporary block clears.',
+                'error_type': 'youtube_blocked'
+            }), 400
+        elif 'proxy' in error_msg.lower() or 'tunnel connection' in error_msg.lower():
+            print("⚠️ Detected proxy/network error")
+            return jsonify({
+                'success': False,
+                'error': 'Network connection issue. Please try again in a moment.',
+                'error_type': 'network_error'
             }), 400
         elif 'download' in error_msg.lower() or 'couldn\'t' in error_msg.lower() or 'duration' in error_msg.lower():
             print("⚠️ Detected download/duration error")

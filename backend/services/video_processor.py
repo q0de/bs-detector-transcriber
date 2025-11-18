@@ -12,6 +12,48 @@ class VideoProcessor:
         self.whisper_model = None
         self.whisper_module = None
         self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+        try:
+            self.proxy_url = self._get_proxy_url()
+            if self.proxy_url:
+                print(f"🌐 Proxy configured: {self.proxy_url.split('@')[1] if '@' in self.proxy_url else 'configured'}")
+            else:
+                print("⚠️ No proxy configured - using direct connection")
+        except Exception as e:
+            print(f"⚠️ Proxy configuration error (non-critical): {str(e)}")
+            self.proxy_url = None
+    
+    def _get_proxy_url(self):
+        """Build proxy URL from environment variables or use PROXY_URL if set"""
+        try:
+            # If PROXY_URL is directly set, use it
+            proxy_url = os.environ.get('PROXY_URL', None)
+            if proxy_url:
+                print(f"🌐 Found PROXY_URL environment variable")
+                return proxy_url
+            
+            # Otherwise, build from IPRoyal credentials
+            proxy_host = os.environ.get('PROXY_HOST')
+            proxy_port = os.environ.get('PROXY_PORT')
+            proxy_username = os.environ.get('PROXY_USERNAME')
+            proxy_password = os.environ.get('PROXY_PASSWORD')
+            
+            # Debug: Check what we found
+            print(f"🔍 Proxy env check: HOST={bool(proxy_host)}, PORT={bool(proxy_port)}, USER={bool(proxy_username)}, PASS={bool(proxy_password)}")
+            
+            if proxy_host and proxy_port and proxy_username and proxy_password:
+                # Format: http://username:password@hostname:port
+                proxy_url = f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+                print(f"✅ Built proxy URL from environment variables")
+                return proxy_url
+            else:
+                print(f"⚠️ Missing proxy environment variables - need all 4: PROXY_HOST, PROXY_PORT, PROXY_USERNAME, PROXY_PASSWORD")
+            
+            return None
+        except Exception as e:
+            print(f"⚠️ Error building proxy URL: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def auto_highlight_transcript(self, transcript, analysis):
         """Automatically add highlight tags to transcript based on claims"""
@@ -176,8 +218,8 @@ class VideoProcessor:
     def estimate_duration(self, video_url):
         """Estimate video duration without downloading"""
         try:
-            # Get proxy from environment (same as download_video)
-            proxy_url = os.environ.get('PROXY_URL', None)
+            # Use proxy from instance variable
+            proxy_url = self.proxy_url
             
             ydl_opts = {
                 'quiet': True,
@@ -215,8 +257,8 @@ class VideoProcessor:
     def download_video(self, video_url, output_path):
         """Download video using yt-dlp with anti-bot measures and optional proxy"""
         try:
-            # Get proxy from environment (optional, for videos without transcripts)
-            proxy_url = os.environ.get('PROXY_URL', None)
+            # Use proxy from instance variable
+            proxy_url = self.proxy_url
             
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -741,8 +783,8 @@ Remember: Return ONLY the JSON object, no other text."""
             try:
                 print("📊 Attempting to fetch video metadata...")
                 
-                # Get proxy from environment
-                proxy_url = os.environ.get('PROXY_URL', None)
+                # Use proxy from instance variable
+                proxy_url = self.proxy_url
                 
                 ydl_opts = {
                     'quiet': True,

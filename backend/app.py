@@ -1,4 +1,4 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from dotenv import load_dotenv
 import os
 import sys
@@ -127,6 +127,46 @@ def health():
         'timestamp': datetime.datetime.utcnow().isoformat(),
         'cors_origins': allowed_origins
     }, 200
+
+@app.route('/api/test-proxy', methods=['GET'])
+def test_proxy():
+    """Test endpoint to check proxy configuration"""
+    import os
+    from services.video_processor import VideoProcessor
+    
+    try:
+        # Check environment variables
+        proxy_host = os.environ.get('PROXY_HOST')
+        proxy_port = os.environ.get('PROXY_PORT')
+        proxy_username = os.environ.get('PROXY_USERNAME')
+        proxy_password = os.environ.get('PROXY_PASSWORD')
+        proxy_url = os.environ.get('PROXY_URL')
+        
+        # Try to initialize VideoProcessor to see what it detects
+        processor = VideoProcessor()
+        
+        result = {
+            'proxy_url_set': bool(proxy_url),
+            'proxy_host_set': bool(proxy_host),
+            'proxy_port_set': bool(proxy_port),
+            'proxy_username_set': bool(proxy_username),
+            'proxy_password_set': bool(proxy_password),
+            'processor_proxy_detected': bool(processor.proxy_url),
+            'processor_proxy_url': processor.proxy_url.split('@')[1] if processor.proxy_url and '@' in processor.proxy_url else None
+        }
+        
+        return jsonify({
+            'success': True,
+            'proxy_configured': bool(processor.proxy_url),
+            'details': result
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
