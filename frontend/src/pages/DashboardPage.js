@@ -337,20 +337,6 @@ function DashboardPage() {
                   <>
                     <div className="result-section">
                       <div className="result-header">
-                        <h3>📄 TRANSCRIPTION</h3>
-                        <div className="result-actions">
-                          <button onClick={() => navigator.clipboard.writeText(videoResult.transcription)}>
-                            Copy
-                          </button>
-                        </div>
-                      </div>
-                      <div className="result-content">
-                        {videoResult.transcription}
-                      </div>
-                    </div>
-                    
-                    <div className="result-section">
-                      <div className="result-header">
                         <h3>📝 AI ANALYSIS</h3>
                         <div className="result-actions">
                           <button onClick={() => navigator.clipboard.writeText(
@@ -364,6 +350,11 @@ function DashboardPage() {
                         {typeof analysis === 'string' ? analysis : JSON.stringify(analysis, null, 2)}
                       </div>
                     </div>
+                    
+                    <InteractiveTranscript 
+                      transcript={videoResult.transcription}
+                      transcriptSegments={videoResult.transcript_segments}
+                    />
                   </>
                 );
               }

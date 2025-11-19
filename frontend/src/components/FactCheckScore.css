@@ -144,10 +144,23 @@
   border: 2px solid rgba(244, 67, 54, 0.5);
 }
 
+.score-summary {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.score-summary p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
 .ai-synopsis {
   background: rgba(0, 0, 0, 0.15);
   border-radius: 12px;
-  margin-top: 16px;
+  margin-top: 12px;
   overflow: hidden;
 }
 
