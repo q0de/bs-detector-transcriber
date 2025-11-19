@@ -339,6 +339,37 @@ function DashboardPage() {
                 }
                 
                 console.log('📝 [Render] Rendering summarize format (plain text)');
+                
+                // Format markdown-style text for better readability
+                const formatSummaryText = (text) => {
+                  if (typeof text !== 'string') return text;
+                  
+                  return text.split('\n').map((line, index) => {
+                    // Convert markdown headers to styled headers
+                    if (line.startsWith('### ')) {
+                      return <h3 key={index} style={{ marginTop: '20px', marginBottom: '10px', color: '#2563eb' }}>{line.replace('### ', '')}</h3>;
+                    } else if (line.startsWith('#### ')) {
+                      return <h4 key={index} style={{ marginTop: '15px', marginBottom: '8px', color: '#3b82f6' }}>{line.replace('#### ', '')}</h4>;
+                    } else if (line.startsWith('**') && line.endsWith('**')) {
+                      return <p key={index} style={{ fontWeight: 'bold', marginBottom: '8px' }}>{line.replace(/\*\*/g, '')}</p>;
+                    } else if (line.startsWith('- ')) {
+                      return <li key={index} style={{ marginLeft: '20px', marginBottom: '5px' }}>{line.replace('- ', '')}</li>;
+                    } else if (line.trim() === '') {
+                      return <br key={index} />;
+                    } else {
+                      // Handle bold text within paragraphs
+                      const parts = line.split(/(\*\*.*?\*\*)/g);
+                      const formatted = parts.map((part, i) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={i}>{part.replace(/\*\*/g, '')}</strong>;
+                        }
+                        return part;
+                      });
+                      return <p key={index} style={{ marginBottom: '8px', lineHeight: '1.6' }}>{formatted}</p>;
+                    }
+                  });
+                };
+                
                 // Render plain text format (summarize)
                 return (
                   <>
@@ -353,13 +384,14 @@ function DashboardPage() {
                           </button>
                         </div>
                       </div>
-                      <div className="result-content">
-                        {typeof analysis === 'string' ? analysis : JSON.stringify(analysis, null, 2)}
+                      <div className="result-content" style={{ padding: '20px' }}>
+                        {typeof analysis === 'string' ? formatSummaryText(analysis) : JSON.stringify(analysis, null, 2)}
                       </div>
                     </div>
                     
                     <InteractiveTranscript 
                       transcript={videoResult.transcription}
+                      highlightedTranscript={null}
                       transcriptSegments={videoResult.transcript_segments}
                     />
                   </>

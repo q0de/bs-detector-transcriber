@@ -2,10 +2,22 @@ import React, { useState } from 'react';
 import './InteractiveTranscript.css';
 
 function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSegments }) {
-  const [showTimestamps, setShowTimestamps] = useState(false);
-  const [showHighlights, setShowHighlights] = useState(true);
-  
   if (!transcript && !highlightedTranscript) return null;
+  
+  // Check if we have real timestamped segments
+  const hasTimestamps = transcriptSegments && transcriptSegments.length > 0;
+  
+  // Check if highlighted transcript has actual tags (fact-check mode) or is just plain text (summary mode)
+  const hasRealHighlights = highlightedTranscript && (
+    highlightedTranscript.includes('[VERIFIED]') ||
+    highlightedTranscript.includes('[OPINION]') ||
+    highlightedTranscript.includes('[UNCERTAIN]') ||
+    highlightedTranscript.includes('[FALSE]')
+  );
+  
+  // Default timestamps to ON when no highlights are available (e.g., summary mode)
+  const [showTimestamps, setShowTimestamps] = useState(!hasRealHighlights && hasTimestamps);
+  const [showHighlights, setShowHighlights] = useState(true);
   
   // Format seconds to MM:SS
   const formatTimestamp = (seconds) => {
@@ -13,9 +25,6 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
-  // Check if we have real timestamped segments
-  const hasTimestamps = transcriptSegments && transcriptSegments.length > 0;
   
   // Group small segments into larger 30-60 second chunks for better readability
   const groupSegments = (segments, targetDuration = 45) => {
@@ -55,14 +64,7 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
   
   const groupedSegments = hasTimestamps ? groupSegments(transcriptSegments) : [];
   
-  // Check if highlighted transcript is just a placeholder message or doesn't have actual tags
-  const hasRealHighlights = highlightedTranscript && (
-    highlightedTranscript.includes('[VERIFIED]') ||
-    highlightedTranscript.includes('[OPINION]') ||
-    highlightedTranscript.includes('[UNCERTAIN]') ||
-    highlightedTranscript.includes('[FALSE]')
-  );
-  
+  // Check if highlighted transcript is just a placeholder message
   const isPlaceholder = highlightedTranscript && !hasRealHighlights && (
     highlightedTranscript.includes('[Transcript with highlights not included') ||
     highlightedTranscript.includes('OPTIONAL:') ||
