@@ -98,14 +98,15 @@ function VideoProcessor({ onProcessed, onLoadingChange, onProcessingStart }) {
     setProcessingStatus('Fetching video info...');
     console.log('🚀 VideoProcessor: Starting processing, loading set to true');
     
+    // Trim whitespace from URL
+    const cleanUrl = url.trim();
+    
     // Clear old results when starting new processing
     if (onProcessingStart) {
-      onProcessingStart();
+      onProcessingStart(cleanUrl);
     }
 
     try {
-      // Trim whitespace from URL
-      const cleanUrl = url.trim();
       
       // Fetch metadata if we don't have it yet
       if (!videoMetadata) {

@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import './ProcessingStatus.css';
 
-function ProcessingStatus({ isProcessing, onComplete }) {
+function ProcessingStatus({ isProcessing, onComplete, videoUrl }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
-  // Steps that loop during processing (exclude the final "complete" step)
-  const processingSteps = [
+  // Detect platform from URL
+  const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
+  const isInstagram = videoUrl && (videoUrl.includes('instagram.com') || videoUrl.includes('instagr.am'));
+  const platform = isYouTube ? 'YouTube' : isInstagram ? 'Instagram' : 'Video';
+
+  // Platform-specific steps
+  const youtubeSteps = [
     { emoji: '🎬', text: 'Starting video processing...' },
     { emoji: '🎯', text: 'Fetching transcript from YouTube...' },
-    { emoji: '✅', text: 'Transcript retrieved successfully' },
+    { emoji: '✅', text: 'YouTube transcript retrieved' },
     { emoji: '🤖', text: 'Analyzing content with AI...' },
     { emoji: '🔍', text: 'Fact-checking claims...' },
     { emoji: '📝', text: 'Generating highlights...' },
@@ -17,6 +22,31 @@ function ProcessingStatus({ isProcessing, onComplete }) {
     { emoji: '💾', text: 'Storing analysis results...' },
     { emoji: '✨', text: 'Finalizing...' },
   ];
+
+  const instagramSteps = [
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '📥', text: 'Downloading Instagram video...' },
+    { emoji: '🎤', text: 'Transcribing audio with Whisper AI...' },
+    { emoji: '✅', text: 'Transcription complete' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '🔍', text: 'Fact-checking claims...' },
+    { emoji: '📝', text: 'Generating highlights...' },
+    { emoji: '💾', text: 'Storing analysis results...' },
+    { emoji: '✨', text: 'Finalizing...' },
+  ];
+
+  const genericSteps = [
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '📥', text: 'Downloading video...' },
+    { emoji: '🎤', text: 'Transcribing audio...' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '🔍', text: 'Processing claims...' },
+    { emoji: '💾', text: 'Storing results...' },
+    { emoji: '✨', text: 'Finalizing...' },
+  ];
+
+  // Choose steps based on platform
+  const processingSteps = isYouTube ? youtubeSteps : isInstagram ? instagramSteps : genericSteps;
   
   const completionStep = { emoji: '✅', text: 'Analysis complete!' };
 
