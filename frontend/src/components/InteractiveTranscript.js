@@ -17,6 +17,44 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
   // Check if we have real timestamped segments
   const hasTimestamps = transcriptSegments && transcriptSegments.length > 0;
   
+  // Group small segments into larger 30-60 second chunks for better readability
+  const groupSegments = (segments, targetDuration = 45) => {
+    if (!segments || segments.length === 0) return [];
+    
+    const grouped = [];
+    let currentGroup = { 
+      start: segments[0].start, 
+      texts: [], 
+      duration: 0 
+    };
+    
+    segments.forEach((segment, idx) => {
+      currentGroup.texts.push(segment.text);
+      currentGroup.duration += segment.duration || 0;
+      
+      // Group until we hit target duration OR it's the last segment
+      if (currentGroup.duration >= targetDuration || idx === segments.length - 1) {
+        grouped.push({
+          start: currentGroup.start,
+          text: currentGroup.texts.join(' ').trim()
+        });
+        
+        // Start new group with next segment's start time
+        if (idx < segments.length - 1) {
+          currentGroup = { 
+            start: segments[idx + 1]?.start || currentGroup.start + currentGroup.duration, 
+            texts: [], 
+            duration: 0 
+          };
+        }
+      }
+    });
+    
+    return grouped;
+  };
+  
+  const groupedSegments = hasTimestamps ? groupSegments(transcriptSegments) : [];
+  
   // Check if highlighted transcript is just a placeholder message or doesn't have actual tags
   const hasRealHighlights = highlightedTranscript && (
     highlightedTranscript.includes('[VERIFIED]') ||
@@ -127,36 +165,33 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
       )}
       
       <div className={`transcript-content ${showTimestamps ? 'with-timestamps' : ''}`}>
-        {hasTimestamps && showTimestamps ? (
-          // Render with real timestamps from YouTube
-          // If highlights are also ON, try to match segments with highlighted text
-          transcriptSegments.map((segment, index) => {
-            // Try to find this segment's text in the highlighted transcript to preserve tags
-            let textToRender = segment.text;
-            
-            if (showHighlights && hasRealHighlights && highlightedTranscript) {
-              // Try to find matching text with tags in the highlighted transcript
-              // This is a best-effort match - look for the segment text
-              const escapedText = segment.text.trim().substring(0, 50); // First 50 chars for matching
-              const matchRegex = new RegExp(`([\\[A-Z\\]]*${escapedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\\[]*)(\\[|$)`, 'i');
-              const match = highlightedTranscript.match(matchRegex);
-              
-              if (match) {
-                // Found it! Use the highlighted version
-                textToRender = match[1].trim();
-              }
-            }
+        {showHighlights && hasRealHighlights && showTimestamps && hasTimestamps ? (
+          // BOTH highlights and timestamps ON: Show highlighted paragraphs with approximate timestamps
+          // Use the highlighted transcript (which is paragraph-based) and add timestamps to each paragraph
+          paragraphs.map((paragraph, index) => {
+            // Estimate timestamp based on paragraph position
+            // Assume roughly even distribution across the video
+            const estimatedSeconds = groupedSegments[Math.min(index, groupedSegments.length - 1)]?.start || (index * 45);
             
             return (
               <p key={index} className="transcript-paragraph">
-                <span className="timestamp">[{formatTimestamp(segment.start)}]</span>
+                <span className="timestamp">[{formatTimestamp(estimatedSeconds)}]</span>
                 {' '}
-                {showHighlights ? renderHighlightedText(textToRender) : textToRender}
+                {renderHighlightedText(paragraph)}
               </p>
             );
           })
+        ) : hasTimestamps && showTimestamps ? (
+          // ONLY timestamps ON: Show grouped segments with precise timestamps
+          groupedSegments.map((segment, index) => (
+            <p key={index} className="transcript-paragraph">
+              <span className="timestamp">[{formatTimestamp(segment.start)}]</span>
+              {' '}
+              {segment.text}
+            </p>
+          ))
         ) : paragraphs.length > 0 ? (
-          // Fallback to paragraph-based rendering (no timestamps or timestamps disabled)
+          // ONLY highlights ON or both OFF: Show paragraph-based rendering
           paragraphs.map((paragraph, index) => (
             <p key={index} className="transcript-paragraph">
               {renderHighlightedText(paragraph)}
