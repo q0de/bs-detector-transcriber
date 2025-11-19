@@ -4,7 +4,7 @@ import { videoAPI } from '../services/api';
 import { supabase } from '../services/supabase';
 import './VideoProcessor.css';
 
-function VideoProcessor({ onProcessed, onLoadingChange }) {
+function VideoProcessor({ onProcessed, onLoadingChange, onProcessingStart }) {
   const [inputType, setInputType] = useState('url'); // 'url' or 'file'
   const [url, setUrl] = useState('');
   const [file, setFile] = useState(null);
@@ -97,6 +97,11 @@ function VideoProcessor({ onProcessed, onLoadingChange }) {
     setInsufficientCredits(null);
     setProcessingStatus('Fetching video info...');
     console.log('🚀 VideoProcessor: Starting processing, loading set to true');
+    
+    // Clear old results when starting new processing
+    if (onProcessingStart) {
+      onProcessingStart();
+    }
 
     try {
       // Trim whitespace from URL
@@ -128,7 +133,8 @@ function VideoProcessor({ onProcessed, onLoadingChange }) {
       // Normalize response data - map video_id to id for consistency
       const normalizedData = {
         ...response.data,
-        id: response.data.video_id || response.data.id
+        id: response.data.video_id || response.data.id,
+        metadata: videoMetadata || null  // Attach video metadata (title, thumbnail, author)
       };
       
       // Call callback if provided

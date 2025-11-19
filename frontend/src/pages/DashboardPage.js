@@ -105,6 +105,11 @@ function DashboardPage() {
     fetchRecentVideos();
   };
 
+  const handleProcessingStart = () => {
+    console.log('🧹 Clearing old results - new video processing started');
+    setVideoResult(null);
+  };
+
   return (
     <div className="dashboard-page">
       <div className="container">
@@ -133,6 +138,7 @@ function DashboardPage() {
           <VideoProcessor 
             onProcessed={handleVideoProcessed} 
             onLoadingChange={setIsProcessing}
+            onProcessingStart={handleProcessingStart}
           />
         </div>
         
@@ -146,32 +152,30 @@ function DashboardPage() {
             </div>
             
             {/* Video Metadata Card */}
-            {videoResult.metadata && (
-              <div className="video-metadata-card">
-                {videoResult.metadata.thumbnail && (
-                  <img 
-                    src={videoResult.metadata.thumbnail} 
-                    alt="Video thumbnail"
-                    className="video-metadata-thumbnail"
-                  />
-                )}
-                <div className="video-metadata-info">
-                  <h2 className="video-metadata-title">
-                    {videoResult.metadata.title || videoResult.title || 'Video Analysis'}
-                  </h2>
-                  {videoResult.metadata.author && (
-                    <p className="video-metadata-author">
-                      👤 {videoResult.metadata.author}
-                    </p>
-                  )}
-                  <p className="video-metadata-details">
-                    📹 {videoResult.platform} • 
-                    ⏱️ {videoResult.duration_minutes?.toFixed(1)} min • 
-                    📅 {new Date(videoResult.created_at).toLocaleDateString()}
+            <div className="video-metadata-card">
+              {videoResult.metadata?.thumbnail && (
+                <img 
+                  src={videoResult.metadata.thumbnail} 
+                  alt="Video thumbnail"
+                  className="video-metadata-thumbnail"
+                />
+              )}
+              <div className="video-metadata-info">
+                <h2 className="video-metadata-title">
+                  {videoResult.metadata?.title || videoResult.title || 'Video Analysis'}
+                </h2>
+                {videoResult.metadata?.author && (
+                  <p className="video-metadata-author">
+                    👤 {videoResult.metadata.author}
                   </p>
-                </div>
+                )}
+                <p className="video-metadata-details">
+                  📹 {videoResult.platform || 'Unknown'} • 
+                  ⏱️ {videoResult.duration_minutes?.toFixed(1)} min
+                  {videoResult.created_at && ` • 📅 ${new Date(videoResult.created_at).toLocaleDateString()}`}
+                </p>
               </div>
-            )}
+            </div>
             
             {/* Helper: Get parsed analysis */}
             {(() => {
