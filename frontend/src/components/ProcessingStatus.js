@@ -5,27 +5,31 @@ function ProcessingStatus({ isProcessing, onComplete }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
+  // Steps that loop during processing (exclude the final "complete" step)
   const processingSteps = [
-    { emoji: '🎬', text: 'Starting video processing...', delay: 0 },
-    { emoji: '🎯', text: 'Fetching transcript...', delay: 1000 },
-    { emoji: '✅', text: 'Transcript retrieved', delay: 2000 },
-    { emoji: '🤖', text: 'Analyzing with AI...', delay: 3000 },
-    { emoji: '📝', text: 'Generating highlights...', delay: 4000 },
-    { emoji: '🎨', text: 'Adding claim tags...', delay: 5000 },
-    { emoji: '✨', text: 'Wrapping up...', delay: 5500 },
-    { emoji: '✅', text: 'Analysis complete!', delay: 6000 },
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '🎯', text: 'Fetching transcript from YouTube...' },
+    { emoji: '✅', text: 'Transcript retrieved successfully' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '🔍', text: 'Fact-checking claims...' },
+    { emoji: '📝', text: 'Generating highlights...' },
+    { emoji: '🎨', text: 'Adding claim tags...' },
+    { emoji: '💾', text: 'Storing analysis results...' },
+    { emoji: '✨', text: 'Finalizing...' },
   ];
+  
+  const completionStep = { emoji: '✅', text: 'Analysis complete!' };
 
   useEffect(() => {
     if (!isProcessing) {
-      // Show final step briefly, then fade out
-      setCurrentStep(processingSteps.length - 1);
+      // Backend finished! Show completion message briefly, then fade out
+      setCurrentStep(-1); // Special index for completion step
       const fadeTimer = setTimeout(() => {
         setFadeOut(true);
         setTimeout(() => {
           if (onComplete) onComplete();
         }, 800);
-      }, 500);
+      }, 800); // Show "complete" for 800ms before fading
       return () => clearTimeout(fadeTimer);
     }
 
@@ -34,47 +38,49 @@ function ProcessingStatus({ isProcessing, onComplete }) {
     setFadeOut(false);
     console.log('🎬 ProcessingStatus: Starting - isProcessing:', isProcessing);
 
-    // Animate through steps
-    const timers = [];
-    processingSteps.forEach((step, index) => {
-      const timer = setTimeout(() => {
-        if (isProcessing) {
-          setCurrentStep(index);
-          console.log(`📊 ProcessingStatus: Step ${index} - ${step.text}`);
-        }
-      }, step.delay);
-      timers.push(timer);
-    });
+    // Loop through steps continuously while processing
+    // ~3 seconds per step = ~27 seconds for full cycle
+    let stepIndex = 0;
+    const stepInterval = setInterval(() => {
+      stepIndex = (stepIndex + 1) % processingSteps.length;
+      setCurrentStep(stepIndex);
+      console.log(`📊 ProcessingStatus: Step ${stepIndex} - ${processingSteps[stepIndex].text}`);
+    }, 3000); // Change step every 3 seconds
 
     return () => {
-      timers.forEach(timer => clearTimeout(timer));
+      clearInterval(stepInterval);
     };
   }, [isProcessing]);
 
-  // Show when: processing OR showing completion (last step) OR fading out
-  // Only hide when completely done (not processing, not on last step, not fading)
-  const isShowingCompletion = !isProcessing && currentStep === processingSteps.length - 1;
+  // Show when: processing OR showing completion OR fading out
+  const isShowingCompletion = !isProcessing && currentStep === -1;
   if (!isProcessing && !isShowingCompletion && !fadeOut) return null;
   
+  // Get current step data
+  const currentStepData = currentStep === -1 ? completionStep : processingSteps[currentStep];
+  
   // Debug log
-  if (isProcessing) {
-    console.log('✅ ProcessingStatus: Rendering - currentStep:', currentStep, 'isProcessing:', isProcessing);
+  if (isProcessing || isShowingCompletion) {
+    console.log('✅ ProcessingStatus: Rendering - currentStep:', currentStep, 'isProcessing:', isProcessing, 'text:', currentStepData?.text);
   }
 
   return (
     <div className={`processing-status ${fadeOut ? 'fade-out' : ''}`}>
       <div className="processing-status-content">
         <div className="processing-emoji">
-          {processingSteps[currentStep]?.emoji || '⏳'}
+          {currentStepData?.emoji || '⏳'}
         </div>
         <div className="processing-text">
-          {processingSteps[currentStep]?.text || 'Processing...'}
+          {currentStepData?.text || 'Processing...'}
         </div>
-        <div className="processing-dots">
-          <span className="dot"></span>
-          <span className="dot"></span>
-          <span className="dot"></span>
-        </div>
+        {/* Only show loading dots while processing, not on completion */}
+        {isProcessing && (
+          <div className="processing-dots">
+            <span className="dot"></span>
+            <span className="dot"></span>
+            <span className="dot"></span>
+          </div>
+        )}
       </div>
     </div>
   );

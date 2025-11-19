@@ -334,19 +334,6 @@ def process_video():
         video_response = supabase.table('videos').insert(video_data).execute()
         video_id = video_response.data[0]['id'] if video_response.data else None
         
-        # Send Slack notification for video upload
-        try:
-            notify_video_upload(
-                email=user_email,
-                video_url=video_url,
-                video_title=result.get('title', 'Untitled'),
-                duration_minutes=result['duration_minutes'],
-                analysis_type=analysis_type,
-                user_id=user_id
-            )
-        except Exception as slack_error:
-            print(f"⚠️ Slack notification failed (non-critical): {str(slack_error)}")
-        
         # Update user minutes
         new_used = used + actual_minutes
         supabase.table('users').update({
@@ -396,6 +383,20 @@ def process_video():
                 'last_score': float(creator_data['last_fact_score']) if creator_data.get('last_fact_score') else None,
                 'category': creator_data.get('category')
             }
+        
+        # Send Slack notification AFTER everything is complete (DB stored, minutes deducted, response ready)
+        try:
+            notify_video_upload(
+                email=user_email,
+                video_url=video_url,
+                video_title=result.get('title', 'Untitled'),
+                duration_minutes=result['duration_minutes'],
+                analysis_type=analysis_type,
+                user_id=user_id
+            )
+            print("✅ Slack notification sent (processing fully complete)")
+        except Exception as slack_error:
+            print(f"⚠️ Slack notification failed (non-critical): {str(slack_error)}")
         
         return jsonify(response_data), 200
         
