@@ -225,11 +225,23 @@ class VideoProcessor:
                 # Fetch the actual transcript data
                 fetched = transcript.fetch()
                 
-                # Combine all text segments
+                # Extract segments with timestamps (start time in seconds, duration, text)
+                segments = []
+                for snippet in fetched.snippets:
+                    segments.append({
+                        'start': snippet.start,  # Start time in seconds
+                        'duration': snippet.duration,  # Duration in seconds
+                        'text': snippet.text
+                    })
+                
+                # Combine all text segments for analysis
                 full_text = ' '.join([snippet.text for snippet in fetched.snippets])
                 
-                print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters)")
-                return full_text
+                print(f"✅ Successfully retrieved YouTube transcript ({len(full_text)} characters, {len(segments)} segments)")
+                return {
+                    'text': full_text,
+                    'segments': segments
+                }
                 
             except Exception as e:
                 print(f"⚠️ No transcripts available: {str(e)}")
@@ -959,15 +971,24 @@ Transcription:
         creator_info = None  # Will be populated from video metadata
         
         transcription = None
+        transcript_segments = None  # Timestamped segments from YouTube
         language = 'en'
         
         # Try YouTube transcript first (fastest method, works even if yt-dlp is blocked)
         if is_youtube:
             print("🎯 Attempting to use YouTube transcript (faster)...")
-            transcription = self.get_youtube_transcript(video_url)
+            yt_transcript = self.get_youtube_transcript(video_url)
             
-            if transcription:
-                print("✅ Using YouTube transcript (no download needed!)")
+            if yt_transcript:
+                # YouTube transcript returns dict with 'text' and 'segments'
+                if isinstance(yt_transcript, dict):
+                    transcription = yt_transcript.get('text')
+                    transcript_segments = yt_transcript.get('segments')
+                    print(f"✅ Using YouTube transcript with {len(transcript_segments)} timestamped segments")
+                else:
+                    # Fallback for old format (just text)
+                    transcription = yt_transcript
+                    print("✅ Using YouTube transcript (no download needed!)")
             else:
                 print("⚠️ No YouTube transcript available, falling back to download+Whisper...")
         
@@ -1129,6 +1150,7 @@ Transcription:
             'platform': platform,
             'duration_minutes': duration_minutes,
             'transcription': transcription,
+            'transcript_segments': transcript_segments,  # Timestamped segments (YouTube only)
             'analysis': analysis,
             'creator_info': creator_info,
             'language': language

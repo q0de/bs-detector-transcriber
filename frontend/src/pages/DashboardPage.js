@@ -292,6 +292,7 @@ function DashboardPage() {
                     <InteractiveTranscript 
                       transcript={videoResult.transcription}
                       highlightedTranscript={analysis.full_transcript_with_highlights}
+                      transcriptSegments={videoResult.transcript_segments}
                     />
                     
                     {/* Embeddable Badge Codes */}
@@ -316,6 +317,7 @@ function DashboardPage() {
                       <InteractiveTranscript 
                         transcript={videoResult.transcription}
                         highlightedTranscript={analysis.full_transcript_with_highlights}
+                        transcriptSegments={videoResult.transcript_segments}
                       />
                       <BadgeEmbed 
                         videoId={videoResult.id}

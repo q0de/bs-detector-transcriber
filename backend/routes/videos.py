@@ -369,6 +369,7 @@ def process_video():
             'minutes_charged': actual_minutes,
             'minute_multiplier': multiplier,
             'transcription': result['transcription'],
+            'transcript_segments': result.get('transcript_segments'),  # Timestamped segments (YouTube only)
             'analysis': analysis,  # Now guaranteed to be object for fact-check, string for summarize
             'analysis_type': analysis_type,  # CRITICAL: Frontend needs this to determine UI rendering
             'minutes_remaining': remaining

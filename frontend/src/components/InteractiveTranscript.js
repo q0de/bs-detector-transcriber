@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import './InteractiveTranscript.css';
 
-function InteractiveTranscript({ transcript, highlightedTranscript }) {
+function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSegments }) {
   const [showTimestamps, setShowTimestamps] = useState(false);
   const [showHighlights, setShowHighlights] = useState(true);
   
   if (!transcript && !highlightedTranscript) return null;
+  
+  // Format seconds to MM:SS
+  const formatTimestamp = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  // Check if we have real timestamped segments
+  const hasTimestamps = transcriptSegments && transcriptSegments.length > 0;
   
   // Check if highlighted transcript is just a placeholder message or doesn't have actual tags
   const hasRealHighlights = highlightedTranscript && (
@@ -70,7 +80,7 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
     });
   };
   
-  // Split transcript into paragraphs for better readability
+  // Split transcript into paragraphs for better readability (fallback when no segments)
   const paragraphs = displayText ? displayText.split(/\n\n+/) : [];
   
   return (
@@ -91,6 +101,8 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
           <button 
             className={`control-btn ${showTimestamps ? 'active' : ''}`}
             onClick={() => setShowTimestamps(!showTimestamps)}
+            disabled={!hasTimestamps}
+            title={!hasTimestamps ? 'Timestamps not available for this video' : 'Toggle timestamps in transcript'}
           >
             {showTimestamps ? '⏱️ Timestamps: ON' : '⏱️ Timestamps: OFF'}
           </button>
@@ -115,12 +127,19 @@ function InteractiveTranscript({ transcript, highlightedTranscript }) {
       )}
       
       <div className={`transcript-content ${showTimestamps ? 'with-timestamps' : ''}`}>
-        {paragraphs.length > 0 ? (
+        {hasTimestamps && showTimestamps ? (
+          // Render with real timestamps from YouTube
+          transcriptSegments.map((segment, index) => (
+            <p key={index} className="transcript-paragraph">
+              <span className="timestamp">[{formatTimestamp(segment.start)}]</span>
+              {' '}
+              {renderHighlightedText(segment.text)}
+            </p>
+          ))
+        ) : paragraphs.length > 0 ? (
+          // Fallback to paragraph-based rendering (no timestamps or timestamps disabled)
           paragraphs.map((paragraph, index) => (
             <p key={index} className="transcript-paragraph">
-              {showTimestamps && (
-                <span className="timestamp">[{Math.floor(index * 30 / 60)}:{(index * 30 % 60).toString().padStart(2, '0')}]</span>
-              )}
               {renderHighlightedText(paragraph)}
             </p>
           ))
