@@ -150,7 +150,6 @@ def process_video():
                 analysis = processor.analyze_with_openai(existing_transcript, analysis_type)
                 # OpenAI returns JSON string, parse it to dict for highlight processing
                 if isinstance(analysis, str):
-                    import json
                     analysis = json.loads(analysis)
             else:
                 print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")

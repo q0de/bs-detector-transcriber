@@ -1,5 +1,6 @@
 import yt_dlp
 import os
+import json
 from anthropic import Anthropic
 from openai import OpenAI
 from datetime import datetime
@@ -380,9 +381,6 @@ class VideoProcessor:
     
     def deep_recheck_claim(self, claim, timestamp, context, original_verdict):
         """Perform deep fact-check on a single claim flagged by user"""
-        import json
-        import re
-        
         try:
             print(f"🔍 Deep re-checking claim: {claim[:100]}...")
             
@@ -689,9 +687,6 @@ Remember: Return ONLY the JSON object, no other text."""
             # For fact-check, try to parse as JSON
             if analysis_type == 'fact-check':
                 try:
-                    import json
-                    import re
-                    
                     # Claude might wrap JSON in markdown code blocks, so remove them
                     cleaned = analysis.strip()
                     if cleaned.startswith('```'):
@@ -804,8 +799,6 @@ Remember: Return ONLY the JSON object, no other text."""
     def analyze_with_openai(self, transcription, analysis_type):
         """Analyze transcription with OpenAI GPT-4o (for longer transcripts)"""
         try:
-            import json
-            
             # Truncate if too long
             max_chars = 100000  # OpenAI has higher limits
             if len(transcription) > max_chars:
@@ -1084,7 +1077,6 @@ Transcription:
             analysis = self.analyze_with_openai(transcription, analysis_type)
             # OpenAI returns JSON string, parse it to dict for highlight processing
             if analysis_type == 'fact-check' and isinstance(analysis, str):
-                import json
                 analysis = json.loads(analysis)
         else:
             print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
