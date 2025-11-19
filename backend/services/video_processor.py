@@ -272,6 +272,12 @@ class VideoProcessor:
     def estimate_duration(self, video_url):
         """Estimate video duration without downloading"""
         try:
+            # For Instagram, we can't easily estimate duration without downloading
+            # Most Instagram reels are short (~30 seconds), so use a conservative estimate
+            if 'instagram.com' in video_url:
+                print("📱 Instagram URL detected - using default estimate (most reels are 30-90 seconds)")
+                return 60  # 1 minute estimate for Instagram reels
+            
             # Get both HTTP and SOCKS5 proxy URLs
             http_proxy, socks5_proxy = self._get_proxy_urls()
             proxy_url = http_proxy  # Default to HTTP
@@ -326,9 +332,133 @@ class VideoProcessor:
             print(f"❌ Duration estimation failed: {str(e)}")
             raise Exception(f"Couldn't estimate duration: {str(e)}")
     
+    def try_instagram_embed(self, video_url, output_path):
+        """Try to download Instagram video using embed endpoint (no auth required)"""
+        import re
+        import requests
+        
+        try:
+            print("📱 Attempting Instagram embed scraping...")
+            
+            # Extract post ID from URL (works for /p/, /reel/, /tv/)
+            post_id = None
+            patterns = [
+                r'instagram\.com/(?:p|reel|tv)/([A-Za-z0-9_-]+)',
+                r'instagram\.com/reels?/([A-Za-z0-9_-]+)'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, video_url)
+                if match:
+                    post_id = match.group(1)
+                    break
+            
+            if not post_id:
+                raise Exception("Could not extract Instagram post ID from URL")
+            
+            print(f"📝 Extracted post ID: {post_id}")
+            
+            # Try multiple methods to get video URL
+            video_direct_url = None
+            
+            # Method 1: Try Instagram's embed endpoint
+            embed_url = f"https://www.instagram.com/p/{post_id}/embed/captioned/"
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.instagram.com/'
+            }
+            
+            # Build proxy dict if available
+            proxies = None
+            if self.proxy_host:
+                proxy_url = self._get_proxy_url()
+                proxies = {
+                    'http': proxy_url,
+                    'https': proxy_url
+                }
+                print(f"🌐 Using proxy for Instagram embed request...")
+            
+            response = requests.get(embed_url, headers=headers, proxies=proxies, timeout=15)
+            
+            if response.status_code == 200:
+                html = response.text
+                
+                # Try multiple regex patterns to find video URL
+                patterns = [
+                    r'"video_url":"([^"]+)"',
+                    r'videoUrl":"([^"]+)"',
+                    r'"src":"(https://[^"]*cdninstagram[^"]*\.mp4[^"]*)"',
+                    r'<video[^>]+src="([^"]+)"'
+                ]
+                
+                for pattern in patterns:
+                    match = re.search(pattern, html)
+                    if match:
+                        video_direct_url = match.group(1)
+                        # Unescape unicode characters
+                        video_direct_url = video_direct_url.replace('\\u0026', '&')
+                        print(f"✅ Found video URL using pattern: {pattern[:30]}...")
+                        break
+            
+            # Method 2: Try the public API endpoint (fallback)
+            if not video_direct_url:
+                print("🔄 Embed method failed, trying public API endpoint...")
+                api_url = f"https://www.instagram.com/p/{post_id}/?__a=1&__d=dis"
+                
+                response = requests.get(api_url, headers=headers, proxies=proxies, timeout=15)
+                
+                if response.status_code == 200:
+                    try:
+                        data = response.json()
+                        # Navigate the JSON structure (it varies)
+                        if 'items' in data:
+                            video_direct_url = data['items'][0].get('video_versions', [{}])[0].get('url')
+                        elif 'graphql' in data:
+                            video_direct_url = data['graphql']['shortcode_media'].get('video_url')
+                    except Exception as json_error:
+                        print(f"⚠️ Failed to parse API JSON: {str(json_error)}")
+            
+            if not video_direct_url:
+                raise Exception("Could not extract video URL from Instagram page. The post may be private, deleted, or Instagram's format has changed.")
+            
+            # Download the video from the direct URL
+            print(f"📥 Downloading video from direct URL...")
+            video_response = requests.get(video_direct_url, headers=headers, proxies=proxies, stream=True, timeout=30)
+            
+            if video_response.status_code != 200:
+                raise Exception(f"Failed to download video: HTTP {video_response.status_code}")
+            
+            # Save to output path
+            with open(output_path, 'wb') as f:
+                for chunk in video_response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            print(f"✅ Instagram video downloaded successfully via embed scraping")
+            
+            # Return basic info (duration will be extracted during transcription)
+            return {
+                'duration': 0,  # Unknown at this point
+                'title': f'Instagram Post {post_id}',
+                'uploader': 'Instagram User'
+            }
+            
+        except Exception as e:
+            print(f"❌ Instagram embed scraping failed: {str(e)}")
+            raise Exception(f"Couldn't download Instagram video: {str(e)}")
+    
     def download_video(self, video_url, output_path):
         """Download video using yt-dlp with anti-bot measures and optional proxy"""
         try:
+            # Check if this is Instagram - route to embed scraping
+            if 'instagram.com' in video_url:
+                print("📱 Instagram URL detected - using embed scraping method...")
+                return self.try_instagram_embed(video_url, output_path)
+            
+            # YouTube and other platforms - use yt-dlp
             # Get both HTTP and SOCKS5 proxy URLs
             http_proxy, socks5_proxy = self._get_proxy_urls()
             proxy_url = http_proxy  # Default to HTTP

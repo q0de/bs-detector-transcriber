@@ -87,9 +87,9 @@ def process_video_free():
         
         # Detect specific error types and provide helpful messages
         if 'instagram' in error_lower and any(keyword in error_lower for keyword in [
-            'login required', 'rate-limit', 'not available', 'cookies'
+            'login required', 'rate-limit', 'format has changed', 'cookies'
         ]):
-            error_message = "Instagram requires authentication to download videos. Unfortunately, Instagram videos cannot be processed at this time. We recommend using YouTube videos instead, which work reliably without authentication."
+            error_message = "Unable to access this Instagram video. Instagram support is experimental and may not work for all videos. For more reliable processing, we recommend using YouTube videos instead."
         elif any(keyword in error_lower for keyword in [
             'sign in to confirm', 'bot', 'ipblocked', 'ip blocked'
         ]):

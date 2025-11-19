@@ -410,13 +410,13 @@ def process_video():
         traceback.print_exc()
         
         # Specific error messages for common issues
-        if 'instagram' in error_msg.lower() and ('login required' in error_msg.lower() or 'rate-limit' in error_msg.lower() or 'not available' in error_msg.lower()):
-            print("⚠️ Detected Instagram authentication/rate-limit error")
+        if 'instagram' in error_msg.lower() and ('login required' in error_msg.lower() or 'rate-limit' in error_msg.lower() or 'format has changed' in error_msg.lower()):
+            print("⚠️ Detected Instagram access error")
             return jsonify({
                 'success': False,
-                'error': 'Instagram requires authentication to download videos. Unfortunately, Instagram videos cannot be processed at this time.',
-                'suggestion': 'Instagram has strict access controls that require login credentials. We recommend using YouTube videos instead, which work reliably without authentication.',
-                'error_type': 'instagram_auth_required'
+                'error': 'Unable to access this Instagram video. Instagram support is experimental and may not work for all videos.',
+                'suggestion': 'Instagram has strict access controls. For more reliable processing, we recommend using YouTube videos instead. If the Instagram video is important, try again later or ensure it\'s public.',
+                'error_type': 'instagram_access_error'
             }), 400
         elif 'bot' in error_msg.lower() or 'sign in' in error_msg.lower() or 'ipblocked' in error_msg.lower() or 'ip blocked' in error_msg.lower():
             print("⚠️ Detected YouTube IP blocking/bot detection")
