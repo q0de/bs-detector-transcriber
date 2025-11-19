@@ -1079,25 +1079,25 @@ FACT SCORE GUIDANCE:
 Transcription:
 {transcription}"""
 
-                    print(f"🤖 Sending {len(user_prompt)} characters to OpenAI GPT-4o-mini with JSON mode...")
+                print(f"🤖 Sending {len(user_prompt)} characters to OpenAI GPT-4o-mini with JSON mode...")
 
-                    response = self.openai_client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        response_format={"type": "json_object"},  # Guaranteed valid JSON!
-                        temperature=0.3
-                    )
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format={"type": "json_object"},  # Guaranteed valid JSON!
+                    temperature=0.3
+                )
 
-                    analysis_json = response.choices[0].message.content
-                    print(f"✅ Received {len(analysis_json) if analysis_json else 0} characters from OpenAI")
-                    
-                    # Check if response is empty
-                    if not analysis_json or analysis_json.strip() == '':
-                        print(f"❌ OpenAI returned empty response!")
-                        raise Exception("OpenAI returned an empty response. Please try again.")
+                analysis_json = response.choices[0].message.content
+                print(f"✅ Received {len(analysis_json) if analysis_json else 0} characters from OpenAI")
+                
+                # Check if response is empty
+                if not analysis_json or analysis_json.strip() == '':
+                    print(f"❌ OpenAI returned empty response!")
+                    raise Exception("OpenAI returned an empty response. Please try again.")
                 
                 # Parse to verify it's valid JSON
                 try:
