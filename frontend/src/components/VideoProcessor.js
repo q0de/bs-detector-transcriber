@@ -101,6 +101,13 @@ function VideoProcessor({ onProcessed, onLoadingChange, onProcessingStart }) {
     // Trim whitespace from URL
     const cleanUrl = url.trim();
     
+    // Warn users about Instagram limitations
+    if (cleanUrl.includes('instagram.com')) {
+      setError('Instagram videos require authentication and cannot be processed at this time. Please use YouTube videos instead, which work reliably without authentication.');
+      setLoading(false);
+      return;
+    }
+    
     // Clear old results when starting new processing
     if (onProcessingStart) {
       onProcessingStart(cleanUrl);
