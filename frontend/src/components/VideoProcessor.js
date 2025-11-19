@@ -103,7 +103,7 @@ function VideoProcessor({ onProcessed, onLoadingChange, onProcessingStart }) {
     
     // Clear old results when starting new processing
     if (onProcessingStart) {
-      onProcessingStart(cleanUrl);
+      onProcessingStart(cleanUrl, analysisType);
     }
 
     try {

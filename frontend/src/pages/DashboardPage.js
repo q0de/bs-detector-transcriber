@@ -36,6 +36,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState('');
+  const [currentAnalysisType, setCurrentAnalysisType] = useState('fact-check');
   const [showLoginMessage, setShowLoginMessage] = useState(location.state?.loginSuccess || false);
   const [showHistoryMessage, setShowHistoryMessage] = useState(location.state?.fromHistory || false);
   const loginMessage = location.state?.message;
@@ -106,10 +107,12 @@ function DashboardPage() {
     fetchRecentVideos();
   };
 
-  const handleProcessingStart = (videoUrl) => {
+  const handleProcessingStart = (videoUrl, analysisType = 'fact-check') => {
     console.log('🧹 Clearing old results - new video processing started');
+    console.log('🎯 Analysis type:', analysisType);
     setVideoResult(null);
     setCurrentVideoUrl(videoUrl || '');
+    setCurrentAnalysisType(analysisType);
   };
 
   return (
@@ -135,6 +138,7 @@ function DashboardPage() {
           isProcessing={isProcessing} 
           onComplete={() => setIsProcessing(false)}
           videoUrl={currentVideoUrl}
+          analysisType={currentAnalysisType}
         />
         
         <div className="dashboard-section">

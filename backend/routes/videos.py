@@ -150,8 +150,8 @@ def process_video():
             if use_openai:
                 print(f"🤖 Analyzing with OpenAI GPT-4o-mini ({transcript_length} chars)...")
                 analysis = processor.analyze_with_openai(existing_transcript, analysis_type)
-                # OpenAI returns JSON string, parse it to dict for highlight processing
-                if isinstance(analysis, str):
+                # OpenAI returns JSON string for fact-check, plain text for summarize
+                if analysis_type == 'fact-check' and isinstance(analysis, str):
                     if not analysis or analysis.strip() == '':
                         raise Exception("OpenAI returned empty analysis. Please try again.")
                     try:
@@ -160,6 +160,9 @@ def process_video():
                         print(f"❌ Failed to parse OpenAI response in route: {str(e)}")
                         print(f"📄 Raw analysis (first 200 chars): {analysis[:200]}")
                         raise Exception(f"Failed to parse AI analysis: {str(e)}")
+                elif analysis_type == 'summarize':
+                    # Summarize returns plain text, no parsing needed
+                    print(f"✅ OpenAI returned summary ({len(analysis)} chars)")
             else:
                 print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
                 analysis = processor.analyze_with_claude(existing_transcript, analysis_type)

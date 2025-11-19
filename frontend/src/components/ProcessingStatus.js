@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './ProcessingStatus.css';
 
-function ProcessingStatus({ isProcessing, onComplete, videoUrl }) {
+function ProcessingStatus({ isProcessing, onComplete, videoUrl, analysisType = 'fact-check' }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -9,9 +9,11 @@ function ProcessingStatus({ isProcessing, onComplete, videoUrl }) {
   const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
   const isInstagram = videoUrl && (videoUrl.includes('instagram.com') || videoUrl.includes('instagr.am'));
   const platform = isYouTube ? 'YouTube' : isInstagram ? 'Instagram' : 'Video';
+  
+  const isSummarize = analysisType === 'summarize';
 
-  // Platform-specific steps
-  const youtubeSteps = [
+  // YouTube Fact-Check Steps
+  const youtubeFactCheckSteps = [
     { emoji: '🎬', text: 'Starting video processing...' },
     { emoji: '🎯', text: 'Fetching transcript from YouTube...' },
     { emoji: '✅', text: 'YouTube transcript retrieved' },
@@ -22,8 +24,20 @@ function ProcessingStatus({ isProcessing, onComplete, videoUrl }) {
     { emoji: '💾', text: 'Storing analysis results...' },
     { emoji: '✨', text: 'Finalizing...' },
   ];
+  
+  // YouTube Summarize Steps
+  const youtubeSummarizeSteps = [
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '🎯', text: 'Fetching transcript from YouTube...' },
+    { emoji: '✅', text: 'YouTube transcript retrieved' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '📝', text: 'Generating summary...' },
+    { emoji: '💾', text: 'Storing analysis results...' },
+    { emoji: '✨', text: 'Finalizing...' },
+  ];
 
-  const instagramSteps = [
+  // Instagram Fact-Check Steps
+  const instagramFactCheckSteps = [
     { emoji: '🎬', text: 'Starting video processing...' },
     { emoji: '📥', text: 'Downloading Instagram video...' },
     { emoji: '🎤', text: 'Transcribing audio with Whisper AI...' },
@@ -34,19 +48,49 @@ function ProcessingStatus({ isProcessing, onComplete, videoUrl }) {
     { emoji: '💾', text: 'Storing analysis results...' },
     { emoji: '✨', text: 'Finalizing...' },
   ];
+  
+  // Instagram Summarize Steps
+  const instagramSummarizeSteps = [
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '📥', text: 'Downloading Instagram video...' },
+    { emoji: '🎤', text: 'Transcribing audio with Whisper AI...' },
+    { emoji: '✅', text: 'Transcription complete' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '📝', text: 'Generating summary...' },
+    { emoji: '💾', text: 'Storing analysis results...' },
+    { emoji: '✨', text: 'Finalizing...' },
+  ];
 
-  const genericSteps = [
+  // Generic steps (fallback)
+  const genericFactCheckSteps = [
     { emoji: '🎬', text: 'Starting video processing...' },
     { emoji: '📥', text: 'Downloading video...' },
     { emoji: '🎤', text: 'Transcribing audio...' },
     { emoji: '🤖', text: 'Analyzing content with AI...' },
-    { emoji: '🔍', text: 'Processing claims...' },
+    { emoji: '🔍', text: 'Fact-checking claims...' },
+    { emoji: '💾', text: 'Storing results...' },
+    { emoji: '✨', text: 'Finalizing...' },
+  ];
+  
+  const genericSummarizeSteps = [
+    { emoji: '🎬', text: 'Starting video processing...' },
+    { emoji: '📥', text: 'Downloading video...' },
+    { emoji: '🎤', text: 'Transcribing audio...' },
+    { emoji: '🤖', text: 'Analyzing content with AI...' },
+    { emoji: '📝', text: 'Generating summary...' },
     { emoji: '💾', text: 'Storing results...' },
     { emoji: '✨', text: 'Finalizing...' },
   ];
 
-  // Choose steps based on platform
-  const processingSteps = isYouTube ? youtubeSteps : isInstagram ? instagramSteps : genericSteps;
+  // Choose steps based on platform AND analysis type
+  let processingSteps;
+  if (isYouTube) {
+    processingSteps = isSummarize ? youtubeSummarizeSteps : youtubeFactCheckSteps;
+  } else if (isInstagram) {
+    processingSteps = isSummarize ? instagramSummarizeSteps : instagramFactCheckSteps;
+  } else {
+    processingSteps = isSummarize ? genericSummarizeSteps : genericFactCheckSteps;
+  }
   
   const completionStep = { emoji: '✅', text: 'Analysis complete!' };
 
