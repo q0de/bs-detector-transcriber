@@ -129,13 +129,32 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
       <div className={`transcript-content ${showTimestamps ? 'with-timestamps' : ''}`}>
         {hasTimestamps && showTimestamps ? (
           // Render with real timestamps from YouTube
-          transcriptSegments.map((segment, index) => (
-            <p key={index} className="transcript-paragraph">
-              <span className="timestamp">[{formatTimestamp(segment.start)}]</span>
-              {' '}
-              {renderHighlightedText(segment.text)}
-            </p>
-          ))
+          // If highlights are also ON, try to match segments with highlighted text
+          transcriptSegments.map((segment, index) => {
+            // Try to find this segment's text in the highlighted transcript to preserve tags
+            let textToRender = segment.text;
+            
+            if (showHighlights && hasRealHighlights && highlightedTranscript) {
+              // Try to find matching text with tags in the highlighted transcript
+              // This is a best-effort match - look for the segment text
+              const escapedText = segment.text.trim().substring(0, 50); // First 50 chars for matching
+              const matchRegex = new RegExp(`([\\[A-Z\\]]*${escapedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\\[]*)(\\[|$)`, 'i');
+              const match = highlightedTranscript.match(matchRegex);
+              
+              if (match) {
+                // Found it! Use the highlighted version
+                textToRender = match[1].trim();
+              }
+            }
+            
+            return (
+              <p key={index} className="transcript-paragraph">
+                <span className="timestamp">[{formatTimestamp(segment.start)}]</span>
+                {' '}
+                {showHighlights ? renderHighlightedText(textToRender) : textToRender}
+              </p>
+            );
+          })
         ) : paragraphs.length > 0 ? (
           // Fallback to paragraph-based rendering (no timestamps or timestamps disabled)
           paragraphs.map((paragraph, index) => (
