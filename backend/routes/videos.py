@@ -89,7 +89,9 @@ def process_video():
             if test_transcript:
                 print(f"✅ Found YouTube transcript! Estimating from transcript length...")
                 # Estimate: ~150 words per minute speaking rate
-                word_count = len(test_transcript.split())
+                # Handle new dict format {'text': ..., 'segments': ...}
+                transcript_text = test_transcript.get('text') if isinstance(test_transcript, dict) else test_transcript
+                word_count = len(transcript_text.split())
                 estimated_minutes = math.ceil(word_count / 150)
                 has_transcript = True
                 print(f"📊 Estimated {estimated_minutes} minutes based on transcript ({word_count} words)")
