@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './FactCheckScore.css';
 
 function FactCheckScore({ data }) {
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  
   if (!data || !data.fact_score) return null;
 
   const score = data.fact_score;
@@ -63,8 +65,48 @@ function FactCheckScore({ data }) {
       </div>
 
       {data.summary && (
-        <div className="score-summary">
-          <p>{data.summary}</p>
+        <div className="ai-synopsis">
+          <button 
+            className={`synopsis-toggle ${synopsisExpanded ? 'expanded' : ''}`}
+            onClick={() => setSynopsisExpanded(!synopsisExpanded)}
+          >
+            <span className="synopsis-icon">🤖</span>
+            <span className="synopsis-title">AI Analysis & Opinion</span>
+            <span className="synopsis-arrow">{synopsisExpanded ? '▼' : '▶'}</span>
+          </button>
+          
+          {synopsisExpanded && (
+            <div className="synopsis-content">
+              <div className="synopsis-section">
+                <h4>📋 What We Found:</h4>
+                <p>{data.summary}</p>
+              </div>
+              
+              {data.red_flags && data.red_flags.length > 0 && data.red_flags[0] !== '' && (
+                <div className="synopsis-section red-flags">
+                  <h4>🚩 Red Flags & Concerns:</h4>
+                  <ul>
+                    {data.red_flags.map((flag, idx) => (
+                      <li key={idx}>{flag}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <div className="synopsis-section opinion">
+                <h4>💭 Our Take:</h4>
+                <p>
+                  {score >= 7 ? (
+                    `This content appears to be generally reliable. With ${verified} verified claims and a fact score of ${score}/10, the information presented is largely accurate and well-sourced. ${falseClaims > 0 ? `However, be aware of ${falseClaims} false claim${falseClaims > 1 ? 's' : ''} identified.` : ''}`
+                  ) : score >= 4 ? (
+                    `This content has mixed accuracy. While some claims are verified (${verified}), there are concerns with ${falseClaims} false claim${falseClaims > 1 ? 's' : ''} and ${uncertain} uncertain claim${uncertain > 1 ? 's' : ''}. Approach with healthy skepticism and verify important points independently.`
+                  ) : (
+                    `This content has significant accuracy issues. With a fact score of ${score}/10 and ${falseClaims} false claim${falseClaims > 1 ? 's' : ''} identified, much of the information is questionable. We recommend seeking alternative sources for factual information on this topic.`
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
