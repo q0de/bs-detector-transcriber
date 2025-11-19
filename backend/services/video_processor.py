@@ -572,7 +572,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
   "summary": "<brief 2-3 sentence overview>",
   "verified_claims": [
     {{
-      "timestamp": "<MM:SS or 'Throughout'>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim from video>",
       "verdict": "VERIFIED",
       "explanation": "<why this is verified>",
@@ -582,17 +582,17 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
   ],
   "opinion_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "OPINION",
       "explanation": "<why this is subjective/speculative>",
-      "sources": ["<ACTUAL URL if relevant context exists>"],
+      "logical_fallacies": ["<fallacy name or 'None detected'>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
   "uncertain_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "UNCERTAIN",
       "explanation": "<why uncertain - lack of evidence but not disproven>",
@@ -602,7 +602,7 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
   ],
   "false_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "FALSE",
       "explanation": "<why this is false>",
@@ -629,11 +629,22 @@ CLAIM CATEGORIES:
 - UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
 - FALSE: Claims that are demonstrably incorrect or misleading
 
+TIMESTAMP RULES:
+- Use "Throughout" if the claim is repeated, general, or spans the entire video
+- Use "Multiple times" if the claim appears 2-5 times at different points
+- Use "MM:SS" format ONLY if you can identify the EXACT moment it was said once
+- NEVER use "00:00" unless the claim literally happens in the first 10 seconds
+- When in doubt, use "Throughout" or "Multiple times" rather than guessing a timestamp
+
 SOURCES:
 - ALWAYS provide ACTUAL URLs (e.g., https://www.reuters.com/article/..., https://www.ncbi.nlm.nih.gov/..., https://snopes.com/fact-check/...)
 - DO NOT use descriptive names like "Reuters article" or "CDC website"
 - Use full clickable links that users can verify
 - If no URL is available, use an empty array []
+
+LOGICAL FALLACIES (for opinion claims):
+- Identify any logical fallacies or rhetoric techniques: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", etc.
+- If the opinion is reasonably argued without fallacies, use ["None detected"] or ["Sound reasoning"]
 
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
@@ -848,11 +859,22 @@ CLAIM CATEGORIES:
 - UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
 - FALSE: Claims that are demonstrably incorrect or misleading
 
+TIMESTAMP RULES:
+- Use "Throughout" if the claim is repeated, general, or spans the entire video
+- Use "Multiple times" if the claim appears 2-5 times at different points
+- Use "MM:SS" format ONLY if you can identify the EXACT moment it was said once
+- NEVER use "00:00" unless the claim literally happens in the first 10 seconds
+- When in doubt, use "Throughout" or "Multiple times" rather than guessing a timestamp
+
 SOURCES:
 - ALWAYS provide ACTUAL URLs (e.g., https://www.reuters.com/article/..., https://www.ncbi.nlm.nih.gov/..., https://snopes.com/fact-check/...)
 - DO NOT use descriptive names like "Reuters article" or "CDC website"
 - Use full clickable links that users can verify
 - If no URL is available, use an empty array []
+
+LOGICAL FALLACIES (for opinion claims):
+- Identify any logical fallacies or rhetoric techniques: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", etc.
+- If the opinion is reasonably argued without fallacies, use ["None detected"] or ["Sound reasoning"]
 
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
@@ -869,7 +891,7 @@ FACT SCORE GUIDANCE:
   "summary": "<brief 2-3 sentence overview>",
   "verified_claims": [
     {{
-      "timestamp": "<MM:SS or 'Throughout'>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim from video>",
       "verdict": "VERIFIED",
       "explanation": "<why this is verified>",
@@ -879,17 +901,17 @@ FACT SCORE GUIDANCE:
   ],
   "opinion_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "OPINION",
       "explanation": "<why this is subjective/speculative>",
-      "sources": ["<ACTUAL URL if relevant context exists>"],
+      "logical_fallacies": ["<fallacy name or 'None detected'>"],
       "confidence": "<High | Medium | Low>"
     }}
   ],
   "uncertain_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "UNCERTAIN",
       "explanation": "<why uncertain>",
@@ -899,7 +921,7 @@ FACT SCORE GUIDANCE:
   ],
   "false_claims": [
     {{
-      "timestamp": "<MM:SS>",
+      "timestamp": "<'Throughout', 'Multiple times', or 'MM:SS'>",
       "claim": "<exact claim>",
       "verdict": "FALSE",
       "explanation": "<why this is false>",
