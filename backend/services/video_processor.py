@@ -373,11 +373,10 @@ class VideoProcessor:
             
             # Build proxy dict if available
             proxies = None
-            if self.proxy_host:
-                proxy_url = self._get_proxy_url()
+            if self.proxy_url:
                 proxies = {
-                    'http': proxy_url,
-                    'https': proxy_url
+                    'http': self.proxy_url,
+                    'https': self.proxy_url
                 }
                 print(f"🌐 Using proxy for Instagram embed request...")
             
