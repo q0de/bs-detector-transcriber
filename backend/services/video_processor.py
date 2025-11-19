@@ -951,6 +951,12 @@ Remember: Return ONLY the JSON object, no other text."""
     def analyze_with_openai(self, transcription, analysis_type):
         """Analyze transcription with OpenAI GPT-4o (for longer transcripts)"""
         try:
+            # Verify OpenAI API key is configured
+            if not os.getenv('OPENAI_API_KEY'):
+                raise Exception("OPENAI_API_KEY environment variable not set")
+            
+            if not self.openai_client:
+                raise Exception("OpenAI client not initialized")
             # Truncate if too long
             max_chars = 100000  # OpenAI has higher limits
             if len(transcription) > max_chars:
@@ -1073,24 +1079,34 @@ FACT SCORE GUIDANCE:
 Transcription:
 {transcription}"""
 
-                print(f"🤖 Sending {len(user_prompt)} characters to OpenAI GPT-4o-mini with JSON mode...")
-                
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    response_format={"type": "json_object"},  # Guaranteed valid JSON!
-                    temperature=0.3
-                )
-                
-                analysis_json = response.choices[0].message.content
-                print(f"✅ Received {len(analysis_json)} characters from OpenAI")
+                    print(f"🤖 Sending {len(user_prompt)} characters to OpenAI GPT-4o-mini with JSON mode...")
+
+                    response = self.openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        response_format={"type": "json_object"},  # Guaranteed valid JSON!
+                        temperature=0.3
+                    )
+
+                    analysis_json = response.choices[0].message.content
+                    print(f"✅ Received {len(analysis_json) if analysis_json else 0} characters from OpenAI")
+                    
+                    # Check if response is empty
+                    if not analysis_json or analysis_json.strip() == '':
+                        print(f"❌ OpenAI returned empty response!")
+                        raise Exception("OpenAI returned an empty response. Please try again.")
                 
                 # Parse to verify it's valid JSON
-                parsed = json.loads(analysis_json)
-                print(f"✅ OpenAI returned valid JSON with {len(parsed.get('verified_claims', []))} verified claims")
+                try:
+                    parsed = json.loads(analysis_json)
+                    print(f"✅ OpenAI returned valid JSON with {len(parsed.get('verified_claims', []))} verified claims")
+                except json.JSONDecodeError as json_err:
+                    print(f"❌ Failed to parse OpenAI response as JSON: {str(json_err)}")
+                    print(f"📄 Raw response (first 500 chars): {analysis_json[:500]}")
+                    raise Exception(f"OpenAI returned invalid JSON: {str(json_err)}")
                 
                 # Return the JSON string (will be parsed by caller)
                 return analysis_json

@@ -152,7 +152,14 @@ def process_video():
                 analysis = processor.analyze_with_openai(existing_transcript, analysis_type)
                 # OpenAI returns JSON string, parse it to dict for highlight processing
                 if isinstance(analysis, str):
-                    analysis = json.loads(analysis)
+                    if not analysis or analysis.strip() == '':
+                        raise Exception("OpenAI returned empty analysis. Please try again.")
+                    try:
+                        analysis = json.loads(analysis)
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Failed to parse OpenAI response in route: {str(e)}")
+                        print(f"📄 Raw analysis (first 200 chars): {analysis[:200]}")
+                        raise Exception(f"Failed to parse AI analysis: {str(e)}")
             else:
                 print(f"🤖 Analyzing with Claude AI ({transcript_length} chars)...")
                 analysis = processor.analyze_with_claude(existing_transcript, analysis_type)
