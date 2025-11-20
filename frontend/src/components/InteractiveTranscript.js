@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import './InteractiveTranscript.css';
 
 function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSegments }) {
-  if (!transcript && !highlightedTranscript) return null;
-  
   // Check if we have real timestamped segments
   const hasTimestamps = transcriptSegments && transcriptSegments.length > 0;
   
@@ -18,6 +16,9 @@ function InteractiveTranscript({ transcript, highlightedTranscript, transcriptSe
   // Default timestamps to ON when no highlights are available (e.g., summary mode)
   const [showTimestamps, setShowTimestamps] = useState(!hasRealHighlights && hasTimestamps);
   const [showHighlights, setShowHighlights] = useState(true);
+  
+  // Early return AFTER hooks are defined (React Hooks rules)
+  if (!transcript && !highlightedTranscript) return null;
   
   // Format seconds to MM:SS
   const formatTimestamp = (seconds) => {
