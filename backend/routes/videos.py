@@ -193,9 +193,13 @@ def process_video():
                         has_claude_highlights = False  # Force fallback
                     else:
                         print(f"✅ Using Claude's inline highlights (short transcript) - {highlighted_length} chars")
+                        # Debug: Check if field is actually in the response
+                        print(f"🔍 DEBUG: 'full_transcript_with_highlights' in analysis? {claude_highlights is not None}")
+                        print(f"🔍 DEBUG: First 200 chars of highlights: {str(claude_highlights)[:200] if claude_highlights else 'NONE'}")
                 
                 if has_claude_highlights:
-                    # Already validated above, use Claude's highlights
+                    # Claude included highlights in JSON, already in analysis dict
+                    print("✅ Claude highlights already in analysis dict, no further processing needed")
                     pass
                 else:
                     print("🎨 Generating highlights via auto-matching (long transcript or Claude didn't add them)")
@@ -368,6 +372,12 @@ def process_video():
             try:
                 analysis = json.loads(analysis)
                 print("✅ Parsed analysis string to object for response")
+                # Debug: Check if highlights are in parsed analysis
+                if 'full_transcript_with_highlights' in analysis:
+                    print(f"✅ Highlights found in analysis (length: {len(analysis['full_transcript_with_highlights'])})")
+                else:
+                    print("⚠️ NO 'full_transcript_with_highlights' in analysis dict!")
+                    print(f"🔍 Available keys: {list(analysis.keys())}")
             except:
                 print("⚠️ Analysis is plain text (probably from summarize mode)")
         
