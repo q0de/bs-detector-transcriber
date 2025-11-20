@@ -772,8 +772,13 @@ SOURCES:
 - If no URL is available, use an empty array []
 
 LOGICAL FALLACIES (for opinion claims):
-- Identify any logical fallacies or rhetoric techniques: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", etc.
-- If the opinion is reasonably argued without fallacies, use ["None detected"] or ["Sound reasoning"]
+- CRITICALLY ANALYZE the reasoning for ANY logical fallacies or rhetoric techniques
+- Common fallacies to look for: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", "Anecdotal evidence", "Cherry picking", "Confirmation bias", "False equivalence", "Circular reasoning", etc.
+- Look for SUBTLE fallacies too - even if the argument sounds reasonable, check for weak logic or manipulative rhetoric
+- Only use ["Sound reasoning"] if the opinion is backed by solid logical structure with no detectable flaws
+- Be thorough - most opinions in videos contain at least one rhetorical technique or fallacy
+- Example: Personal stories used to prove a general point = "Anecdotal evidence"
+- Example: Emotional language to sway opinion = "Appeal to emotion"
 
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
@@ -1008,8 +1013,13 @@ SOURCES:
 - If no URL is available, use an empty array []
 
 LOGICAL FALLACIES (for opinion claims):
-- Identify any logical fallacies or rhetoric techniques: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", etc.
-- If the opinion is reasonably argued without fallacies, use ["None detected"] or ["Sound reasoning"]
+- CRITICALLY ANALYZE the reasoning for ANY logical fallacies or rhetoric techniques
+- Common fallacies to look for: "Appeal to emotion", "Slippery slope", "False dichotomy", "Hasty generalization", "Ad hominem", "Strawman", "Appeal to authority", "Bandwagon", "Red herring", "Anecdotal evidence", "Cherry picking", "Confirmation bias", "False equivalence", "Circular reasoning", etc.
+- Look for SUBTLE fallacies too - even if the argument sounds reasonable, check for weak logic or manipulative rhetoric
+- Only use ["Sound reasoning"] if the opinion is backed by solid logical structure with no detectable flaws
+- Be thorough - most opinions in videos contain at least one rhetorical technique or fallacy
+- Example: Personal stories used to prove a general point = "Anecdotal evidence"
+- Example: Emotional language to sway opinion = "Appeal to emotion"
 
 FACT SCORE GUIDANCE:
 - Base the fact_score (0-10) primarily on VERIFIED vs FALSE claims
