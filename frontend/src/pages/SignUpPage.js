@@ -72,14 +72,20 @@ function SignUpPage() {
       console.error('Signup error:', err);
       if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
         setError('Cannot connect to server. Please make sure the backend is running.');
-      } else if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
       } else {
-        setError('Signup failed. Please try again.');
+        // Extract error message - handle both string and object responses
+        const errorData = err.response?.data?.error || err.response?.data?.message;
+        let errorMessage = 'Signup failed. Please try again.';
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else if (typeof errorData === 'object' && errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        setError(errorMessage);
       }
     } finally {
       setLoading(false);

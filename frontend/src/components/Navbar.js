@@ -35,7 +35,12 @@ function Navbar() {
           const response = await userAPI.getCurrentUser();
           setUserDetails(response.data);
         } catch (err) {
-          console.error('Failed to fetch user details:', err);
+          // Extract error message for logging
+          const errorMsg = err.response?.data?.error || err.message || err;
+          const errorString = typeof errorMsg === 'string' ? errorMsg : 
+                             (typeof errorMsg === 'object' && errorMsg.message) ? errorMsg.message :
+                             JSON.stringify(errorMsg);
+          console.error('Failed to fetch user details:', errorString);
         }
       } else {
         // Fallback to localStorage
@@ -84,7 +89,12 @@ function Navbar() {
           const response = await userAPI.getCurrentUser();
           setUserDetails(response.data);
         } catch (err) {
-          console.error('Failed to fetch user details:', err);
+          // Extract error message for logging
+          const errorMsg = err.response?.data?.error || err.message || err;
+          const errorString = typeof errorMsg === 'string' ? errorMsg : 
+                             (typeof errorMsg === 'object' && errorMsg.message) ? errorMsg.message :
+                             JSON.stringify(errorMsg);
+          console.error('Failed to fetch user details:', errorString);
         }
       } else {
         // Fallback to localStorage

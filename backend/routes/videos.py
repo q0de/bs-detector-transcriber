@@ -430,7 +430,15 @@ def process_video():
         traceback.print_exc()
         
         # Specific error messages for common issues
-        if 'instagram' in error_msg.lower() and ('login required' in error_msg.lower() or 'rate-limit' in error_msg.lower() or 'format has changed' in error_msg.lower()):
+        if 'transcriptsdisabled' in error_msg.lower() or 'subtitles are disabled' in error_msg.lower():
+            print("⚠️ Detected YouTube transcript disabled error")
+            return jsonify({
+                'success': False,
+                'error': 'This YouTube video has subtitles/transcripts disabled by the creator. We cannot process videos without transcripts.',
+                'suggestion': 'Please try a different video that has subtitles enabled. Most YouTube videos have transcripts available.',
+                'error_type': 'transcripts_disabled'
+            }), 400
+        elif 'instagram' in error_msg.lower() and ('login required' in error_msg.lower() or 'rate-limit' in error_msg.lower() or 'format has changed' in error_msg.lower()):
             print("⚠️ Detected Instagram access error")
             return jsonify({
                 'success': False,

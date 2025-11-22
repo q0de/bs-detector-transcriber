@@ -167,7 +167,23 @@ function VideoProcessor({ onProcessed, onLoadingChange, onProcessingStart }) {
           currentTier: err.response.data.current_tier
         });
       } else {
-        setError(err.response?.data?.error || 'Failed to process video. Please try again.');
+        // Extract error message - handle both string and object responses
+        let errorMessage = 'Failed to process video. Please try again.';
+        const errorData = err.response?.data?.error;
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else if (typeof errorData === 'object' && errorData.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === 'object' && errorData.code) {
+            errorMessage = `Server error (${errorData.code}). Please try again later.`;
+          }
+        } else if (err.message) {
+          errorMessage = err.message;
+        } else if (err.response?.status === 502) {
+          errorMessage = 'Server is temporarily unavailable. Please try again in a moment.';
+        }
+        setError(errorMessage);
       }
       setProcessingStatus('');
     } finally {

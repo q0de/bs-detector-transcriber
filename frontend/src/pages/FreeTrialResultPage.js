@@ -40,7 +40,12 @@ function FreeTrialResultPage() {
         }
       });
     } catch (err) {
-      setSignupError(err.response?.data?.error || 'Failed to create account');
+      // Extract error message - handle both string and object responses
+      const errorData = err.response?.data?.error;
+      const errorMessage = typeof errorData === 'string' ? errorData :
+                          (typeof errorData === 'object' && errorData.message) ? errorData.message :
+                          'Failed to create account';
+      setSignupError(errorMessage);
     } finally {
       setSignupLoading(false);
     }

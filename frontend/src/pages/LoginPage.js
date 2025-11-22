@@ -40,7 +40,19 @@ function LoginPage() {
       });
     } catch (err) {
       console.error('Login failed:', err.message);
-      setError(err.response?.data?.error || err.message || 'Login failed. Please try again.');
+      // Extract error message - handle both string and object responses
+      const errorData = err.response?.data?.error;
+      let errorMessage = 'Login failed. Please try again.';
+      if (errorData) {
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (typeof errorData === 'object' && errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

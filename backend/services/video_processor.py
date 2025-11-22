@@ -192,9 +192,20 @@ class VideoProcessor:
                     os.environ['HTTP_PROXY'] = self.proxy_url
                     os.environ['HTTPS_PROXY'] = self.proxy_url
                 
+                transcript_list = None
                 try:
                     api = YouTubeTranscriptApi()
                     transcript_list = api.list(video_id)
+                except TranscriptsDisabled as e:
+                    # Video has transcripts disabled - return None to fall back to Whisper
+                    print(f"⚠️ Transcripts are disabled for this video: {str(e)}")
+                    print("   Will fall back to audio transcription with Whisper...")
+                    transcript_list = None  # Signal that we should return None
+                except NoTranscriptFound as e:
+                    # No transcripts found for this video
+                    print(f"⚠️ No transcripts found for this video: {str(e)}")
+                    print("   Will fall back to audio transcription with Whisper...")
+                    transcript_list = None  # Signal that we should return None
                 finally:
                     # Restore original proxy settings
                     if old_http_proxy is not None:
@@ -206,6 +217,10 @@ class VideoProcessor:
                         os.environ['HTTPS_PROXY'] = old_https_proxy
                     elif 'HTTPS_PROXY' in os.environ:
                         del os.environ['HTTPS_PROXY']
+                
+                # If transcript list is None, it means transcripts are disabled or not found
+                if transcript_list is None:
+                    return None
                 
                 # Try to find English transcript
                 transcript = None
@@ -244,9 +259,10 @@ class VideoProcessor:
                 }
                 
             except Exception as e:
-                print(f"⚠️ No transcripts available: {str(e)}")
+                print(f"⚠️ Error fetching transcripts: {str(e)}")
                 import traceback
                 traceback.print_exc()
+                # Return None to fall back to Whisper transcription
                 return None
             
         except Exception as e:

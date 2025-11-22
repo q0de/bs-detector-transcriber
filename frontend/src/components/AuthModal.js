@@ -72,7 +72,12 @@ function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         }
       });
     } catch (err) {
-      setError(err.response?.data?.error || 'Signup failed');
+      // Extract error message - handle both string and object responses
+      const errorData = err.response?.data?.error;
+      const errorMessage = typeof errorData === 'string' ? errorData :
+                          (typeof errorData === 'object' && errorData.message) ? errorData.message :
+                          'Signup failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -113,7 +118,12 @@ function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         }
       });
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      // Extract error message - handle both string and object responses
+      const errorData = err.response?.data?.error;
+      const errorMessage = typeof errorData === 'string' ? errorData :
+                          (typeof errorData === 'object' && errorData.message) ? errorData.message :
+                          'Login failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
