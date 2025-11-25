@@ -1,5 +1,6 @@
 import yt_dlp
 import os
+import sys
 import json
 from anthropic import Anthropic
 from openai import OpenAI
@@ -9,6 +10,9 @@ import re
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import FeatureFlags
 
 class VideoProcessor:
