@@ -253,26 +253,22 @@ class VideoProcessor:
             
             print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
             
-            # Use the API for version 1.2.3 - create instance and use list() method
+            # Use the API - set proxy via environment variables (requests library respects these)
             try:
                 transcript_list = None
                 
-                # Build proxy dict for the API - pass directly to constructor
-                proxy_config = None
-                if self.proxy_url:
-                    print(f"🌐 Using proxy for YouTube transcript API (direct config)...")
-                    # YouTubeTranscriptApi expects: {"https": "http://user:pass@host:port"}
-                    proxy_config = {
-                        "http": self.proxy_url,
-                        "https": self.proxy_url
-                    }
+                # Save original proxy env vars
+                old_http_proxy = os.environ.get('HTTP_PROXY')
+                old_https_proxy = os.environ.get('HTTPS_PROXY')
                 
                 try:
-                    # Pass proxy directly to the API constructor (works with v0.6.x+)
-                    if proxy_config:
-                        api = YouTubeTranscriptApi(proxies=proxy_config)
-                    else:
-                        api = YouTubeTranscriptApi()
+                    # Set proxy via environment variables (youtube-transcript-api uses requests internally)
+                    if self.proxy_url:
+                        print(f"🌐 Using proxy for YouTube transcript API (via env vars)...")
+                        os.environ['HTTP_PROXY'] = self.proxy_url
+                        os.environ['HTTPS_PROXY'] = self.proxy_url
+                    
+                    api = YouTubeTranscriptApi()
                     transcript_list = api.list(video_id)
                 except TranscriptsDisabled as e:
                     # Video has transcripts disabled - return None to fall back to Whisper
@@ -285,9 +281,15 @@ class VideoProcessor:
                     print("   Will fall back to audio transcription with Whisper...")
                     transcript_list = None  # Signal that we should return None
                 except Exception as proxy_err:
-                    # If proxy fails, try without proxy as last resort
-                    if proxy_config and 'RequestBlocked' in str(type(proxy_err).__name__):
+                    print(f"⚠️ Error fetching transcripts: {str(proxy_err)}")
+                    # If proxy request blocked, try without proxy as last resort
+                    if 'RequestBlocked' in str(type(proxy_err).__name__) or 'RequestBlocked' in str(proxy_err):
                         print(f"⚠️ Proxy request blocked, trying without proxy...")
+                        # Clear proxy env vars for retry
+                        if 'HTTP_PROXY' in os.environ:
+                            del os.environ['HTTP_PROXY']
+                        if 'HTTPS_PROXY' in os.environ:
+                            del os.environ['HTTPS_PROXY']
                         try:
                             api = YouTubeTranscriptApi()
                             transcript_list = api.list(video_id)
@@ -295,6 +297,16 @@ class VideoProcessor:
                             raise proxy_err  # Re-raise original error
                     else:
                         raise
+                finally:
+                    # Restore original proxy env vars
+                    if old_http_proxy is not None:
+                        os.environ['HTTP_PROXY'] = old_http_proxy
+                    elif 'HTTP_PROXY' in os.environ:
+                        del os.environ['HTTP_PROXY']
+                    if old_https_proxy is not None:
+                        os.environ['HTTPS_PROXY'] = old_https_proxy
+                    elif 'HTTPS_PROXY' in os.environ:
+                        del os.environ['HTTPS_PROXY']
                 
                 # If transcript list is None, it means transcripts are disabled or not found
                 if transcript_list is None:
