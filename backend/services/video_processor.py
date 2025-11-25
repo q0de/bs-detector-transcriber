@@ -11,9 +11,33 @@ import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import FeatureFlags
+# Add parent directory to path for imports (handles both direct and module imports)
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_current_dir)
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+
+try:
+    from config import FeatureFlags
+except ImportError:
+    # Fallback: define FeatureFlags inline if config.py can't be found
+    print(f"⚠️ Could not import config from {_parent_dir}, using default FeatureFlags")
+    class FeatureFlags:
+        USE_FASTER_AI_MODELS = os.getenv('USE_FASTER_AI_MODELS', 'false').lower() == 'true'
+        USE_GLOBAL_CACHE = os.getenv('USE_GLOBAL_CACHE', 'false').lower() == 'true'
+        USE_OPENAI_WHISPER = os.getenv('USE_OPENAI_WHISPER', 'false').lower() == 'true'
+        USE_PARALLEL_PROCESSING = os.getenv('USE_PARALLEL_PROCESSING', 'false').lower() == 'true'
+        USE_BACKGROUND_JOBS = os.getenv('USE_BACKGROUND_JOBS', 'false').lower() == 'true'
+        
+        @classmethod
+        def get_status(cls):
+            return {
+                'faster_ai_models': cls.USE_FASTER_AI_MODELS,
+                'global_cache': cls.USE_GLOBAL_CACHE,
+                'openai_whisper': cls.USE_OPENAI_WHISPER,
+                'parallel_processing': cls.USE_PARALLEL_PROCESSING,
+                'background_jobs': cls.USE_BACKGROUND_JOBS,
+            }
 
 class VideoProcessor:
     def __init__(self):
