@@ -9,6 +9,7 @@ import re
 import requests
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from config import FeatureFlags
 
 class VideoProcessor:
     def __init__(self):
@@ -29,6 +30,8 @@ class VideoProcessor:
     def _get_proxy_url(self):
         """Build proxy URL from environment variables or use PROXY_URL if set"""
         try:
+            from urllib.parse import quote
+            
             # If PROXY_URL is directly set, use it
             proxy_url = os.environ.get('PROXY_URL', None)
             if proxy_url:
@@ -45,9 +48,17 @@ class VideoProcessor:
             print(f"🔍 Proxy env check: HOST={bool(proxy_host)}, PORT={bool(proxy_port)}, USER={bool(proxy_username)}, PASS={bool(proxy_password)}")
             
             if proxy_host and proxy_port and proxy_username and proxy_password:
+                # URL-encode username and password to handle special characters
+                encoded_username = quote(proxy_username, safe='')
+                encoded_password = quote(proxy_password, safe='')
+                
                 # Format: http://username:password@hostname:port
-                proxy_url = f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+                proxy_url = f"http://{encoded_username}:{encoded_password}@{proxy_host}:{proxy_port}"
                 print(f"✅ Built proxy URL from environment variables")
+                
+                # Test proxy connectivity
+                self._test_proxy(proxy_url)
+                
                 return proxy_url
             else:
                 print(f"⚠️ Missing proxy environment variables - need all 4: PROXY_HOST, PROXY_PORT, PROXY_USERNAME, PROXY_PASSWORD")
@@ -58,6 +69,24 @@ class VideoProcessor:
             import traceback
             traceback.print_exc()
             return None
+    
+    def _test_proxy(self, proxy_url):
+        """Test if the proxy is working by making a simple request"""
+        try:
+            import requests
+            proxies = {
+                'http': proxy_url,
+                'https': proxy_url
+            }
+            # Use a simple IP check service
+            response = requests.get('https://api.ipify.org?format=json', proxies=proxies, timeout=10)
+            if response.status_code == 200:
+                ip = response.json().get('ip', 'unknown')
+                print(f"✅ Proxy test successful - External IP: {ip}")
+            else:
+                print(f"⚠️ Proxy test returned status {response.status_code}")
+        except Exception as e:
+            print(f"⚠️ Proxy test failed (non-critical): {str(e)[:100]}")
     
     def _get_proxy_urls(self):
         """Get both HTTP and SOCKS5 proxy URLs (IPRoyal supports both)"""
@@ -172,29 +201,50 @@ class VideoProcessor:
         return None
     
     def get_youtube_transcript(self, video_url):
-        """Try to get transcript directly from YouTube"""
+        """Try to get transcript directly from YouTube (with global caching option)"""
         try:
             video_id = self.extract_video_id(video_url)
             if not video_id:
                 return None
             
+            # Check global cache if enabled
+            if FeatureFlags.USE_GLOBAL_CACHE:
+                try:
+                    from services.supabase_client import get_supabase_client
+                    supabase = get_supabase_client()
+                    cached = supabase.table('videos').select('transcription').eq('video_url', video_url).limit(1).execute()
+                    
+                    if cached.data and cached.data[0].get('transcription'):
+                        transcript_text = cached.data[0]['transcription']
+                        print(f"✅ Using cached transcript from global cache ({len(transcript_text)} chars)")
+                        # Return in same format as YouTube API
+                        return {'text': transcript_text, 'segments': []}
+                except Exception as cache_error:
+                    print(f"⚠️ Global cache check failed (non-critical): {cache_error}")
+                    # Continue to fetch new transcript
+            
             print(f"Attempting to fetch YouTube transcript for video ID: {video_id}")
             
             # Use the API for version 1.2.3 - create instance and use list() method
             try:
-                # Set proxy environment variables temporarily for youtube-transcript-api
-                # The library uses requests internally, which respects HTTP_PROXY/HTTPS_PROXY
-                old_http_proxy = os.environ.get('HTTP_PROXY')
-                old_https_proxy = os.environ.get('HTTPS_PROXY')
-                
-                if self.proxy_url:
-                    print(f"🌐 Using proxy for YouTube transcript API...")
-                    os.environ['HTTP_PROXY'] = self.proxy_url
-                    os.environ['HTTPS_PROXY'] = self.proxy_url
-                
                 transcript_list = None
+                
+                # Build proxy dict for the API - pass directly to constructor
+                proxy_config = None
+                if self.proxy_url:
+                    print(f"🌐 Using proxy for YouTube transcript API (direct config)...")
+                    # YouTubeTranscriptApi expects: {"https": "http://user:pass@host:port"}
+                    proxy_config = {
+                        "http": self.proxy_url,
+                        "https": self.proxy_url
+                    }
+                
                 try:
-                    api = YouTubeTranscriptApi()
+                    # Pass proxy directly to the API constructor (works with v0.6.x+)
+                    if proxy_config:
+                        api = YouTubeTranscriptApi(proxies=proxy_config)
+                    else:
+                        api = YouTubeTranscriptApi()
                     transcript_list = api.list(video_id)
                 except TranscriptsDisabled as e:
                     # Video has transcripts disabled - return None to fall back to Whisper
@@ -206,17 +256,17 @@ class VideoProcessor:
                     print(f"⚠️ No transcripts found for this video: {str(e)}")
                     print("   Will fall back to audio transcription with Whisper...")
                     transcript_list = None  # Signal that we should return None
-                finally:
-                    # Restore original proxy settings
-                    if old_http_proxy is not None:
-                        os.environ['HTTP_PROXY'] = old_http_proxy
-                    elif 'HTTP_PROXY' in os.environ:
-                        del os.environ['HTTP_PROXY']
-                    
-                    if old_https_proxy is not None:
-                        os.environ['HTTPS_PROXY'] = old_https_proxy
-                    elif 'HTTPS_PROXY' in os.environ:
-                        del os.environ['HTTPS_PROXY']
+                except Exception as proxy_err:
+                    # If proxy fails, try without proxy as last resort
+                    if proxy_config and 'RequestBlocked' in str(type(proxy_err).__name__):
+                        print(f"⚠️ Proxy request blocked, trying without proxy...")
+                        try:
+                            api = YouTubeTranscriptApi()
+                            transcript_list = api.list(video_id)
+                        except Exception:
+                            raise proxy_err  # Re-raise original error
+                    else:
+                        raise
                 
                 # If transcript list is None, it means transcripts are disabled or not found
                 if transcript_list is None:
@@ -504,7 +554,9 @@ class VideoProcessor:
             
             # Add proxy if configured (helps bypass datacenter IP blocking)
             if proxy_url:
-                print(f"🌐 Using residential proxy for download (HTTP)...")
+                # Mask credentials for logging
+                masked_proxy = proxy_url.split('@')[1] if '@' in proxy_url else proxy_url
+                print(f"🌐 Using residential proxy for download: {masked_proxy}")
                 ydl_opts['proxy'] = proxy_url
             else:
                 print(f"⚠️ No proxy configured - datacenter IPs may be blocked by YouTube")
@@ -513,23 +565,61 @@ class VideoProcessor:
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(video_url, download=True)
+                    print(f"✅ Download successful with HTTP proxy")
                     return info
             except Exception as http_error:
+                error_str = str(http_error)
+                print(f"❌ HTTP proxy download failed: {error_str[:200]}")
+                
                 # If HTTP proxy fails with 403, try SOCKS5
-                if socks5_proxy and ('403' in str(http_error) or ('Forbidden' in str(http_error))):
-                    print(f"🔄 HTTP proxy failed, trying SOCKS5 proxy...")
+                if socks5_proxy and ('403' in error_str or 'Forbidden' in error_str):
+                    print(f"🔄 HTTP proxy failed with 403, trying SOCKS5 proxy...")
                     ydl_opts['proxy'] = socks5_proxy
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(video_url, download=True)
-                        return info
+                    try:
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                            info = ydl.extract_info(video_url, download=True)
+                            print(f"✅ Download successful with SOCKS5 proxy")
+                            return info
+                    except Exception as socks_error:
+                        print(f"❌ SOCKS5 proxy also failed: {str(socks_error)[:200]}")
+                        # Try without proxy as last resort
+                        print(f"🔄 Trying without proxy as last resort...")
+                        del ydl_opts['proxy']
+                        try:
+                            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                                info = ydl.extract_info(video_url, download=True)
+                                print(f"✅ Download successful without proxy")
+                                return info
+                        except Exception as no_proxy_error:
+                            print(f"❌ Direct download also failed: {str(no_proxy_error)[:200]}")
+                            # Raise the original error with more context
+                            raise Exception(f"All download attempts failed. Last error: {str(no_proxy_error)[:300]}")
                 else:
                     raise http_error
         except Exception as e:
             raise Exception(f"Couldn't download video: {str(e)}")
     
     def transcribe_audio(self, audio_path):
-        """Transcribe audio using Whisper"""
+        """Transcribe audio using Whisper (with OpenAI API option and automatic fallback)"""
         try:
+            # Check if OpenAI Whisper API is enabled
+            if FeatureFlags.USE_OPENAI_WHISPER and self.openai_client:
+                try:
+                    print("🎤 Using OpenAI Whisper API (faster, better quality)")
+                    with open(audio_path, "rb") as audio_file:
+                        transcript = self.openai_client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio_file,
+                            language="en"
+                        )
+                    return transcript.text, "en"
+                except Exception as api_error:
+                    print(f"⚠️ OpenAI Whisper API failed: {api_error}")
+                    print("   Falling back to local Whisper...")
+                    # Fall through to local Whisper
+            
+            # Original: Local Whisper (always works as fallback)
+            print("🎤 Using local Whisper model")
             model = self._get_whisper_model()
             result = model.transcribe(audio_path)
             return result['text'], result.get('language', 'en')
@@ -586,10 +676,9 @@ Be thorough and specific in your correction notes!"""
             # Try multiple models with fallback (same as analyze_with_claude)
             # Prioritize Sonnet models for better re-check quality
             models_to_try = [
-                "claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet v2 (Oct 2024) - BEST
-                "claude-3-5-sonnet-20240620",  # Claude 3.5 Sonnet (June 2024) - fallback
-                "claude-3-sonnet-20240229",    # Claude 3 Sonnet (Feb 2024) - older but reliable
-                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024) - fast
+                "claude-3-5-sonnet",           # Claude 3.5 Sonnet (latest) - BEST
+                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024) - fast fallback
+                "claude-3-opus-20240229",      # Claude 3 Opus (Feb 2024) - older but reliable
                 "claude-3-haiku-20240307",     # Claude 3 Haiku (fallback)
             ]
             
@@ -817,10 +906,9 @@ Remember: Return ONLY the JSON object, no other text."""
             # Try different models in order of preference with their max_tokens limits
             # Prioritize Sonnet models for better quality, especially for highlights
             models_to_try = [
-                ("claude-3-5-sonnet-20241022", 8000),   # Claude 3.5 Sonnet v2 (Oct 2024) - BEST
-                ("claude-3-5-sonnet-20240620", 8000),   # Claude 3.5 Sonnet (June 2024) - fallback
-                ("claude-3-sonnet-20240229", 8000),     # Claude 3 Sonnet (Feb 2024) - older but reliable
-                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024) - fast
+                ("claude-3-5-sonnet", 8000),            # Claude 3.5 Sonnet (latest) - BEST
+                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024) - fast fallback
+                ("claude-3-opus-20240229", 8000),      # Claude 3 Opus (Feb 2024) - older but reliable
                 ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (fallback)
             ]
             
@@ -994,8 +1082,13 @@ Remember: Return ONLY the JSON object, no other text."""
 Transcription:
 {transcription}"""
                 
+                # Use faster model for summaries if feature flag enabled (keeps same prompts!)
+                model = "gpt-3.5-turbo" if FeatureFlags.USE_FASTER_AI_MODELS else "gpt-4o-mini"
+                if FeatureFlags.USE_FASTER_AI_MODELS:
+                    print(f"⚡ Using GPT-3.5-turbo for faster summary (feature flag enabled)")
+                
                 response = self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3
                 )
