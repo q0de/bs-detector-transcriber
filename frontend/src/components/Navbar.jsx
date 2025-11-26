@@ -134,7 +134,7 @@ export default function AppNavbar() {
         <NavbarBrand>
           <Link to="/" className="flex items-center gap-2.5 font-bold text-xl">
             <div className="relative">
-              <Icon icon="solar:shield-check-bold" className="text-secondary" width={32} />
+              <Icon icon="solar:magnifer-bold" className="text-secondary" width={28} />
             </div>
             <span className="font-semibold tracking-tight">
               <span className="text-foreground">Truth</span>

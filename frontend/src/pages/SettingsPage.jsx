@@ -146,9 +146,10 @@ export default function SettingsPage() {
             </h2>
           </CardHeader>
           <CardBody className="gap-2">
-            <p className="text-sm text-default-500">
-              <strong>TruthLens</strong> - Video Transcription & Fact-Checking
-            </p>
+            <div className="flex items-center gap-2 text-sm text-default-500">
+              <Icon icon="solar:magnifer-bold" className="text-secondary" width={18} />
+              <span><strong>TruthLens</strong> - Video Transcription & Fact-Checking</span>
+            </div>
             <p className="text-sm text-default-400">Version 2.0.0</p>
             <div className="flex gap-4 mt-2">
               <a href="/terms" className="text-sm text-primary hover:underline">
