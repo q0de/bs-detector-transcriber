@@ -9,3 +9,13 @@
 .dark .bg-default-100 {
   background-color: hsl(240deg 31.44% 8.5%);
 }
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 50px rgba(139, 92, 246, 0.3), 0 0 100px rgba(59, 130, 246, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 70px rgba(139, 92, 246, 0.5), 0 0 120px rgba(59, 130, 246, 0.3), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+}

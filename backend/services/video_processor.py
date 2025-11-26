@@ -947,7 +947,7 @@ FACT SCORE GUIDANCE:
 Analyze this transcription:
 {transcription}
 
-{"CRITICAL FOR HIGHLIGHTS: The 'full_transcript_with_highlights' field MUST contain the COMPLETE transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted ONLY around SPECIFIC FACTUAL CLAIMS (statistics, numbers, names, dates, specific facts). Do NOT highlight general statements, advice, questions, or transitions - leave those UN-highlighted. Example: 'The weather is bad. [VERIFIED]An estimated 73 million people are expected to travel[/VERIFIED]. Stay safe out there.' - notice only the specific verifiable claim is tagged." if include_highlights_instruction else ""}
+{"CRITICAL FOR HIGHLIGHTS: The 'full_transcript_with_highlights' field MUST contain the COMPLETE transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags. IMPORTANT PRIORITY RULES: 1) VERIFIED claims take HIGHEST priority - if a fact can be verified (dates, names, convictions, statistics), tag it as [VERIFIED] even if it's within opinion commentary. 2) Only tag the SPECIFIC claim, not the surrounding sentence. 3) A single sentence can have MULTIPLE tags. Example: 'I think [VERIFIED]Tory Lanez was convicted in December 2022[/VERIFIED] and [OPINION]this case will change everything[/OPINION].' - notice the verified FACT is tagged separately from the opinion. 4) Do NOT wrap entire paragraphs in one tag." if include_highlights_instruction else ""}
 
 Remember: Return ONLY the JSON object, no other text."""
             else:

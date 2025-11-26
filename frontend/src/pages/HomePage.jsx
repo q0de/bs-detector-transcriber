@@ -1,15 +1,71 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardBody,
   Button,
   Chip,
+  Slider,
+  Select,
+  SelectItem,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Divider,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import VideoProcessor from "../components/VideoProcessor";
+import NebulaShader from "../components/NebulaShader";
+
+const BLEND_MODES = [
+  { key: "normal", label: "Normal" },
+  { key: "screen", label: "Screen (Glow)" },
+  { key: "multiply", label: "Multiply (Dark)" },
+  { key: "overlay", label: "Overlay" },
+  { key: "soft-light", label: "Soft Light" },
+  { key: "hard-light", label: "Hard Light" },
+  { key: "color-dodge", label: "Color Dodge" },
+  { key: "lighten", label: "Lighten" },
+  { key: "darken", label: "Darken" },
+  { key: "difference", label: "Difference" },
+  { key: "exclusion", label: "Exclusion" },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [blendMode, setBlendMode] = useState("screen");
+  const [opacity, setOpacity] = useState(0.8);
+  const [frostBlur, setFrostBlur] = useState(8);
+  const [frostOpacity, setFrostOpacity] = useState(0.3);
+  const [animateBlur, setAnimateBlur] = useState(true);
+  const [animatedBlur, setAnimatedBlur] = useState(8);
+
+  // Animated blur effect
+  useEffect(() => {
+    if (!animateBlur) return;
+    
+    let animationFrame;
+    let currentBlur = animatedBlur;
+    let targetBlur = Math.random() * 30;
+    const speed = 0.02; // How fast it transitions (lower = slower)
+    
+    const animate = () => {
+      // Smoothly interpolate towards target
+      currentBlur += (targetBlur - currentBlur) * speed;
+      setAnimatedBlur(currentBlur);
+      
+      // Pick new random target when close to current target
+      if (Math.abs(targetBlur - currentBlur) < 0.5) {
+        targetBlur = Math.random() * 30;
+      }
+      
+      animationFrame = requestAnimationFrame(animate);
+    };
+    
+    animationFrame = requestAnimationFrame(animate);
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [animateBlur]);
 
   const steps = [
     { icon: "solar:link-bold", title: "Paste URL", desc: "Drop YouTube or Instagram video link" },
@@ -36,13 +92,139 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-background to-secondary-50 -z-10" />
-        <div className="absolute top-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -z-10" />
+      <section className="relative py-20 px-4 overflow-hidden min-h-[90vh]">
+        {/* Nebula shader - covers entire hero section */}
+        <NebulaShader blendMode={blendMode} opacity={opacity} />
         
-        <div className="max-w-4xl mx-auto text-center space-y-6">
+        {/* Frosted glass overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none transition-all duration-300"
+          style={{
+            backdropFilter: `blur(${animateBlur ? animatedBlur : frostBlur}px)`,
+            WebkitBackdropFilter: `blur(${animateBlur ? animatedBlur : frostBlur}px)`,
+            backgroundColor: `rgba(7, 2, 13, ${frostOpacity})`,
+          }}
+        />
+        
+        {/* Shader Controls - Fixed position */}
+        <Popover placement="bottom-start" backdrop="blur">
+          <PopoverTrigger>
+            <Button
+              isIconOnly
+              variant="flat"
+              className="fixed top-20 left-4 z-50 bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg"
+              aria-label="Shader settings"
+            >
+              <Icon icon="solar:settings-bold" width={20} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-4 bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm">Shader Controls</h4>
+              
+              <div className="space-y-2">
+                <label className="text-xs text-default-500">Blend Mode</label>
+                <Select
+                  size="sm"
+                  selectedKeys={[blendMode]}
+                  onSelectionChange={(keys) => setBlendMode(Array.from(keys)[0])}
+                  aria-label="Blend mode"
+                >
+                  {BLEND_MODES.map((mode) => (
+                    <SelectItem key={mode.key}>{mode.label}</SelectItem>
+                  ))}
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs text-default-500">Shader Opacity: {Math.round(opacity * 100)}%</label>
+                <Slider
+                  size="sm"
+                  step={0.05}
+                  minValue={0}
+                  maxValue={1}
+                  value={opacity}
+                  onChange={setOpacity}
+                  aria-label="Shader Opacity"
+                  classNames={{
+                    track: "bg-default-200",
+                    filler: "bg-secondary",
+                  }}
+                />
+              </div>
+              
+              <Divider className="my-2" />
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm">Frost Glass</h4>
+                <Button
+                  size="sm"
+                  variant={animateBlur ? "solid" : "flat"}
+                  color={animateBlur ? "secondary" : "default"}
+                  onPress={() => setAnimateBlur(!animateBlur)}
+                  startContent={<Icon icon={animateBlur ? "solar:play-bold" : "solar:pause-bold"} width={14} />}
+                >
+                  {animateBlur ? "Animating" : "Static"}
+                </Button>
+              </div>
+              
+              {animateBlur && (
+                <div className="text-xs text-default-400 bg-secondary/10 rounded-lg p-2">
+                  <Icon icon="solar:magic-stick-3-bold" width={14} className="inline mr-1 text-secondary" />
+                  Blur is smoothly animating: <code className="text-secondary">{animatedBlur.toFixed(1)}px</code>
+                </div>
+              )}
+              
+              {!animateBlur && (
+                <div className="space-y-2">
+                  <label className="text-xs text-default-500">Blur: {frostBlur}px</label>
+                  <Slider
+                    size="sm"
+                    step={1}
+                    minValue={0}
+                    maxValue={30}
+                    value={frostBlur}
+                    onChange={setFrostBlur}
+                    aria-label="Frost Blur"
+                    classNames={{
+                      track: "bg-default-200",
+                      filler: "bg-primary",
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <label className="text-xs text-default-500">Frost Opacity: {Math.round(frostOpacity * 100)}%</label>
+                <Slider
+                  size="sm"
+                  step={0.05}
+                  minValue={0}
+                  maxValue={0.8}
+                  value={frostOpacity}
+                  onChange={setFrostOpacity}
+                  aria-label="Frost Opacity"
+                  classNames={{
+                    track: "bg-default-200",
+                    filler: "bg-primary",
+                  }}
+                />
+              </div>
+              
+              <div className="pt-2 border-t border-default-200">
+                <p className="text-xs text-default-400">
+                  Shader: <code className="text-secondary">{blendMode}</code> @ <code className="text-secondary">{Math.round(opacity * 100)}%</code>
+                </p>
+                <p className="text-xs text-default-400">
+                  Frost: <code className="text-primary">{animateBlur ? `~${animatedBlur.toFixed(0)}px` : `${frostBlur}px`}</code> blur @ <code className="text-primary">{Math.round(frostOpacity * 100)}%</code>
+                  {animateBlur && <span className="text-secondary ml-1">✨</span>}
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        
+        {/* Content on top */}
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
           <Chip color="primary" variant="flat" size="lg" startContent={<Icon icon="solar:star-bold" width={16} />}>
             Try FREE - No Signup Required
           </Chip>
