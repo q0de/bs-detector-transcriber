@@ -275,7 +275,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 bg-default-50">
+      <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">
             How It Works - Simple & Fast
