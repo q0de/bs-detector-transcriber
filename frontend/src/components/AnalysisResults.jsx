@@ -1367,14 +1367,29 @@ export default function AnalysisResults({
   let data;
   if (typeof analysis === "string") {
     try {
-      data = JSON.parse(analysis);
+      // Try to extract JSON from the string (in case there's extra text)
+      const jsonMatch = analysis.match(/^\s*(\{[\s\S]*\})\s*/);
+      if (jsonMatch) {
+        data = JSON.parse(jsonMatch[1]);
+      } else {
+        data = JSON.parse(analysis);
+      }
     } catch (e) {
+      console.error("Failed to parse analysis JSON:", e);
       // It's a plain text summary, not JSON
       data = { summary: analysis };
     }
   } else {
     data = analysis;
   }
+  
+  // Debug log
+  console.log("AnalysisResults data:", { 
+    hasFactScore: data?.fact_score !== undefined,
+    factScore: data?.fact_score,
+    hasSummary: !!data?.summary,
+    keys: Object.keys(data || {})
+  });
 
   const hasFactCheck = data.fact_score !== undefined;
   const hasSummary = data.summary;
