@@ -19,14 +19,26 @@ import { videoAPI } from "../services/api";
 export default function DashboardPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  // Helper to parse analysis JSON (handles extra text)
+  const parseAnalysis = (analysis) => {
+    if (!analysis || typeof analysis !== "string") return analysis;
+    try {
+      // Try to extract JSON object from string (in case there's extra text)
+      const jsonMatch = analysis.match(/^\s*(\{[\s\S]*\})\s*/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1]);
+      }
+      return JSON.parse(analysis);
+    } catch (e) {
+      console.error("Failed to parse analysis JSON:", e);
+      return analysis;
+    }
+  };
+
   const [videoResult, setVideoResult] = useState(() => {
     const result = location.state?.videoResult;
-    if (result?.analysis && typeof result.analysis === "string") {
-      try {
-        result.analysis = JSON.parse(result.analysis);
-      } catch (e) {
-        console.error("Failed to parse analysis JSON:", e);
-      }
+    if (result?.analysis) {
+      result.analysis = parseAnalysis(result.analysis);
     }
     return result || null;
   });
@@ -56,12 +68,8 @@ export default function DashboardPage() {
   };
 
   const handleVideoProcessed = (result) => {
-    if (result.analysis && typeof result.analysis === "string") {
-      try {
-        result.analysis = JSON.parse(result.analysis);
-      } catch (e) {
-        console.error("Failed to parse analysis JSON:", e);
-      }
+    if (result.analysis) {
+      result.analysis = parseAnalysis(result.analysis);
     }
     setVideoResult(result);
     fetchRecentVideos();
