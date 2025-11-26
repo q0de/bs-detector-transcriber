@@ -106,6 +106,14 @@ export default function HomePage() {
           }}
         />
         
+        {/* Bottom fade gradient - smooth transition to next section */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, transparent 0%, #07020D 100%)',
+          }}
+        />
+        
         {/* Shader Controls - Fixed position */}
         <Popover placement="bottom-start" backdrop="blur">
           <PopoverTrigger>
