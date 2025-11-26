@@ -229,7 +229,10 @@ export default function DashboardPage() {
                 videoId={videoResult.id}
                 onRecheck={handleRecheckClaim}
                 transcript={videoResult.transcription}
-                highlightedTranscript={videoResult.highlighted_transcript}
+                highlightedTranscript={
+                  videoResult.highlighted_transcript || 
+                  (typeof videoResult.analysis === 'object' && videoResult.analysis?.full_transcript_with_highlights)
+                }
               />
             </CardBody>
           </Card>
