@@ -902,11 +902,12 @@ WHAT COUNTS AS A CLAIM (BE SELECTIVE):
 - Focus on claims with NUMBERS, NAMES, DATES, STATISTICS, or SPECIFIC FACTS
 - DO NOT treat every sentence as a claim - most sentences are NOT claims
 - IGNORE: greetings, transitions, questions, general descriptions, advice, instructions
-- Aim for 5-15 KEY claims per video, not every sentence
-- Example CLAIM: "73 million people are expected to travel" (specific number = claim)
-- Example NOT A CLAIM: "It's going to be very busy" (vague statement = skip)
+- Example CLAIM: "73 million people are expected to travel" (specific number = verifiable)
+- Example CLAIM: "Gas prices are around $3 a gallon" (specific price = verifiable)
+- Example NOT A CLAIM: "It's going to be very busy" (vague = skip)
 - Example NOT A CLAIM: "Leave early if you can" (advice = skip)
 - Example NOT A CLAIM: "What about the roads?" (question = skip)
+- Example NOT A CLAIM: "All right, thank you" (transition = skip)
 
 CLAIM CATEGORIES:
 - VERIFIED: Specific factual claims backed by reliable sources (statistics, data, named events)
@@ -946,7 +947,7 @@ FACT SCORE GUIDANCE:
 Analyze this transcription:
 {transcription}
 
-{"CRITICAL FOR HIGHLIGHTS: The 'full_transcript_with_highlights' field MUST contain the COMPLETE transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted ONLY around the 5-15 KEY CLAIMS you identified. Do NOT highlight every sentence - only highlight SPECIFIC FACTUAL CLAIMS (statistics, numbers, names, specific facts). Leave most text UN-highlighted. Example: 'The weather is bad. [VERIFIED]An estimated 73 million people are expected to travel[/VERIFIED]. Stay safe out there.' - notice only the specific claim is tagged, not the general statements." if include_highlights_instruction else ""}
+{"CRITICAL FOR HIGHLIGHTS: The 'full_transcript_with_highlights' field MUST contain the COMPLETE transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted ONLY around SPECIFIC FACTUAL CLAIMS (statistics, numbers, names, dates, specific facts). Do NOT highlight general statements, advice, questions, or transitions - leave those UN-highlighted. Example: 'The weather is bad. [VERIFIED]An estimated 73 million people are expected to travel[/VERIFIED]. Stay safe out there.' - notice only the specific verifiable claim is tagged." if include_highlights_instruction else ""}
 
 Remember: Return ONLY the JSON object, no other text."""
             else:
