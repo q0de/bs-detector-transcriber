@@ -161,9 +161,32 @@ function ClaimsStatsCard({ analysis }) {
   );
 }
 
-// Summary Card (HeroUI Pro Style)
+// Summary Card (HeroUI Pro Style - Enhanced)
 function SummaryCard({ summary }) {
   if (!summary) return null;
+  
+  // Extract special sections
+  const extractSpecialSections = (text) => {
+    let mainContent = text;
+    let importantDetails = null;
+    let conclusion = null;
+    
+    // Extract "Important Details:" section
+    const importantMatch = text.match(/Important Details?:?\s*[-–]?\s*([\s\S]*?)(?=Overall Conclusion|$)/i);
+    if (importantMatch) {
+      importantDetails = importantMatch[1].trim();
+      mainContent = mainContent.replace(importantMatch[0], '');
+    }
+    
+    // Extract "Overall Conclusion:" section
+    const conclusionMatch = text.match(/Overall Conclusion:?\s*([\s\S]*?)$/i);
+    if (conclusionMatch) {
+      conclusion = conclusionMatch[1].trim();
+      mainContent = mainContent.replace(conclusionMatch[0], '');
+    }
+    
+    return { mainContent: mainContent.trim(), importantDetails, conclusion };
+  };
   
   // Format summary text - handle numbered sections and bullet points
   const formatSummary = (text) => {
@@ -183,24 +206,24 @@ function SummaryCard({ summary }) {
         const bullets = content.split(/\s*-\s+/).filter(b => b.trim());
         
         return (
-          <div key={idx} className="mb-4">
-            <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">
+          <div key={idx} className="mb-5">
+            <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary text-sm font-bold">
                 {num}
               </span>
               {title.trim()}
             </h4>
             {bullets.length > 1 ? (
-              <ul className="space-y-1 ml-8">
+              <ul className="space-y-2 ml-9">
                 {bullets.map((bullet, bIdx) => (
                   <li key={bIdx} className="text-default-600 text-small flex items-start gap-2">
-                    <span className="text-primary mt-1">•</span>
+                    <Icon icon="solar:arrow-right-linear" className="text-primary mt-0.5 flex-shrink-0" width={14} />
                     <span>{bullet.trim()}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-default-600 text-small ml-8">{content.trim()}</p>
+              <p className="text-default-600 text-small ml-9">{content.trim()}</p>
             )}
           </div>
         );
@@ -211,10 +234,10 @@ function SummaryCard({ summary }) {
       if (hasBullets) {
         const parts = trimmed.split(/\s*-\s+/).filter(p => p.trim());
         return (
-          <ul key={idx} className="space-y-1 mb-3">
+          <ul key={idx} className="space-y-2 mb-4">
             {parts.map((part, pIdx) => (
               <li key={pIdx} className="text-default-600 text-small flex items-start gap-2">
-                <span className="text-primary mt-1">•</span>
+                <Icon icon="solar:arrow-right-linear" className="text-primary mt-0.5 flex-shrink-0" width={14} />
                 <span>{part.trim()}</span>
               </li>
             ))}
@@ -223,23 +246,70 @@ function SummaryCard({ summary }) {
       }
       
       return (
-        <p key={idx} className="text-default-600 leading-relaxed text-small mb-3">
+        <p key={idx} className="text-default-600 leading-relaxed text-small mb-4">
           {trimmed}
         </p>
       );
     });
   };
+
+  // Format bullet list from text with dashes
+  const formatBulletList = (text) => {
+    const items = text.split(/\s*-\s+/).filter(item => item.trim());
+    if (items.length <= 1) {
+      return <p className="text-default-600 text-small">{text}</p>;
+    }
+    return (
+      <ul className="space-y-2">
+        {items.map((item, idx) => (
+          <li key={idx} className="text-default-600 text-small flex items-start gap-2">
+            <Icon icon="solar:arrow-right-linear" className="text-inherit mt-0.5 flex-shrink-0 opacity-70" width={14} />
+            <span>{item.trim()}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const { mainContent, importantDetails, conclusion } = extractSpecialSections(summary);
   
   return (
     <Card className="dark:border-default-100 border border-transparent">
       <div className="flex flex-col gap-y-2 p-4 pb-0">
         <div className="flex items-center gap-2">
-          <Icon icon="solar:document-text-bold" className="text-primary" width={20} />
+          <Icon icon="solar:document-text-linear" className="text-primary" width={20} />
           <h3 className="text-small text-default-500 font-medium">Summary</h3>
         </div>
       </div>
-      <div className="p-4">
-        {formatSummary(summary)}
+      <div className="p-4 space-y-4">
+        {/* Main content */}
+        <div>{formatSummary(mainContent)}</div>
+        
+        {/* Important Details section */}
+        {importantDetails && (
+          <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
+            <h4 className="font-semibold text-warning flex items-center gap-2 mb-3 text-sm">
+              <Icon icon="solar:info-circle-linear" width={18} />
+              Important Details
+            </h4>
+            <div className="text-warning-700 dark:text-warning-200">
+              {formatBulletList(importantDetails)}
+            </div>
+          </div>
+        )}
+        
+        {/* Overall Conclusion section */}
+        {conclusion && (
+          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
+            <h4 className="font-semibold text-primary flex items-center gap-2 mb-3 text-sm">
+              <Icon icon="solar:lightbulb-linear" width={18} />
+              Overall Conclusion
+            </h4>
+            <p className="text-primary-700 dark:text-primary-200 text-small leading-relaxed">
+              {conclusion}
+            </p>
+          </div>
+        )}
       </div>
     </Card>
   );
