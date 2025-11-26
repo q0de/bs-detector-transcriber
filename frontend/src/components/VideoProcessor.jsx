@@ -165,7 +165,9 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
 
   return (
     <Card 
-      className={`w-full max-w-2xl mx-auto ${embedded ? 'shadow-none bg-transparent' : 'bg-black/50 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'}`}
+      isBlurred={!embedded}
+      shadow={embedded ? "none" : "md"}
+      className={`w-full max-w-2xl mx-auto ${embedded ? 'bg-transparent' : 'bg-background/60 dark:bg-default-100/50'}`}
     >
       <CardBody className="gap-6 p-6">
         {/* Input Type Tabs */}
