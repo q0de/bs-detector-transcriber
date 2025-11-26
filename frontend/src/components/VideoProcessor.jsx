@@ -175,7 +175,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           classNames={{
             tabList: "bg-default-100 p-1 rounded-lg",
             cursor: "bg-primary shadow-sm",
-            tab: "px-4 h-10 data-[selected=true]:text-white",
+            tab: "px-6 h-10 min-w-[120px] data-[selected=true]:text-white",
             tabContent: "group-data-[selected=true]:text-white",
           }}
         >

@@ -842,8 +842,11 @@ function ClaimsList({ title, claims, type, icon, onRecheck, videoId }) {
 }
 
 // Bias Analysis Section
-function BiasAnalysisCard({ bias }) {
+function BiasAnalysisCard({ bias, redFlags }) {
   if (!bias) return null;
+  
+  // Use redFlags prop or fallback to bias.red_flags
+  const flags = redFlags || bias.red_flags;
 
   const getBiasColor = (level) => {
     const l = level?.toLowerCase();
@@ -944,16 +947,22 @@ function BiasAnalysisCard({ bias }) {
         )}
 
         {/* Red Flags */}
-        {bias.red_flags && bias.red_flags.length > 0 && (
-          <div className="p-4 bg-danger-50 rounded-xl border border-danger-200">
-            <h4 className="text-sm font-semibold text-danger flex items-center gap-2 mb-2">
-              <Icon icon="solar:flag-bold" width={16} />
+        {flags && flags.length > 0 && (
+          <div 
+            className="p-4 rounded-lg"
+            style={{
+              background: 'linear-gradient(180deg, rgba(243, 18, 96, 0.2) 0%, rgba(243, 18, 96, 0.05) 50%, rgba(243, 18, 96, 0) 100%)',
+              borderTop: '3px solid rgb(243, 18, 96)',
+            }}
+          >
+            <h4 className="text-sm font-semibold text-danger flex items-center gap-2 mb-3">
+              <Icon icon="solar:flag-bold" width={18} />
               Red Flags Detected
             </h4>
-            <ul className="space-y-1">
-              {bias.red_flags.map((flag, idx) => (
-                <li key={idx} className="text-sm text-danger-700 flex items-start gap-2">
-                  <span className="text-danger mt-1">•</span>
+            <ul className="space-y-2">
+              {flags.map((flag, idx) => (
+                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                  <span className="text-danger mt-0.5">•</span>
                   {flag}
                 </li>
               ))}
@@ -1454,7 +1463,10 @@ export default function AnalysisResults({
 
       {/* Bias Analysis */}
       {hasBias && (
-        <BiasAnalysisCard bias={data.bias_analysis || data.bias} />
+        <BiasAnalysisCard 
+          bias={data.bias_analysis || data.bias} 
+          redFlags={data.red_flags || (data.bias_analysis || data.bias)?.red_flags}
+        />
       )}
 
       {/* Transcript */}

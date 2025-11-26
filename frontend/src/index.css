@@ -1,7 +1,11 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
-/* Override default-100 in dark mode */
+/* Override default colors in dark mode */
+.dark .bg-default-50 {
+  background-color: hsl(240deg 30.23% 8.43%);
+}
+
 .dark .bg-default-100 {
   background-color: hsl(240deg 31.44% 8.5%);
 }

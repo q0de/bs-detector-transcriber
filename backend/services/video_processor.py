@@ -897,10 +897,21 @@ IMPORTANT: Return ONLY valid JSON in this exact structure (no markdown, no code 
   {highlights_instruction}
 }}
 
+WHAT COUNTS AS A CLAIM (BE SELECTIVE):
+- ONLY fact-check SPECIFIC, VERIFIABLE FACTUAL ASSERTIONS
+- Focus on claims with NUMBERS, NAMES, DATES, STATISTICS, or SPECIFIC FACTS
+- DO NOT treat every sentence as a claim - most sentences are NOT claims
+- IGNORE: greetings, transitions, questions, general descriptions, advice, instructions
+- Aim for 5-15 KEY claims per video, not every sentence
+- Example CLAIM: "73 million people are expected to travel" (specific number = claim)
+- Example NOT A CLAIM: "It's going to be very busy" (vague statement = skip)
+- Example NOT A CLAIM: "Leave early if you can" (advice = skip)
+- Example NOT A CLAIM: "What about the roads?" (question = skip)
+
 CLAIM CATEGORIES:
-- VERIFIED: Factual claims backed by reliable sources
-- OPINION: Subjective judgments, predictions, speculations, or interpretations (e.g., "I think", "will be", "worst ever", personal beliefs)
-- UNCERTAIN: Factual claims that lack sufficient evidence but aren't disproven
+- VERIFIED: Specific factual claims backed by reliable sources (statistics, data, named events)
+- OPINION: Subjective judgments, predictions, speculations (e.g., "I think", "will be", "worst ever")
+- UNCERTAIN: Specific factual claims that lack sufficient evidence but aren't disproven
 - FALSE: Claims that are demonstrably incorrect or misleading
 
 TIMESTAMP RULES:
@@ -935,7 +946,7 @@ FACT SCORE GUIDANCE:
 Analyze this transcription:
 {transcription}
 
-{"CRITICAL: For short transcripts, the 'full_transcript_with_highlights' field MUST contain the COMPLETE, WORD-FOR-WORD transcript (every single word from the transcription above) with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted. Do NOT summarize, do NOT truncate, do NOT skip words. Include the ENTIRE transcript exactly as provided, just with tags added." if include_highlights_instruction else ""}
+{"CRITICAL FOR HIGHLIGHTS: The 'full_transcript_with_highlights' field MUST contain the COMPLETE transcript with [VERIFIED], [OPINION], [UNCERTAIN], [FALSE] tags inserted ONLY around the 5-15 KEY CLAIMS you identified. Do NOT highlight every sentence - only highlight SPECIFIC FACTUAL CLAIMS (statistics, numbers, names, specific facts). Leave most text UN-highlighted. Example: 'The weather is bad. [VERIFIED]An estimated 73 million people are expected to travel[/VERIFIED]. Stay safe out there.' - notice only the specific claim is tagged, not the general statements." if include_highlights_instruction else ""}
 
 Remember: Return ONLY the JSON object, no other text."""
             else:
