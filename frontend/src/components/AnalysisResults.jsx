@@ -1366,28 +1366,42 @@ export default function AnalysisResults({
   // Handle string analysis - could be plain text summary or JSON string
   let data;
   if (typeof analysis === "string") {
+    console.log("AnalysisResults received STRING, length:", analysis.length, "starts with:", analysis.substring(0, 50));
     try {
-      // Try to extract JSON from the string (in case there's extra text)
-      const jsonMatch = analysis.match(/^\s*(\{[\s\S]*\})\s*/);
-      if (jsonMatch) {
-        data = JSON.parse(jsonMatch[1]);
-      } else {
-        data = JSON.parse(analysis);
-      }
+      data = JSON.parse(analysis);
+      console.log("✅ JSON.parse succeeded, fact_score:", data.fact_score);
     } catch (e) {
-      console.error("Failed to parse analysis JSON:", e);
-      // It's a plain text summary, not JSON
-      data = { summary: analysis };
+      console.error("❌ JSON.parse failed:", e.message);
+      // Try to find JSON object in the string
+      const startIdx = analysis.indexOf('{');
+      const endIdx = analysis.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx > startIdx) {
+        try {
+          const jsonStr = analysis.substring(startIdx, endIdx + 1);
+          data = JSON.parse(jsonStr);
+          console.log("✅ Extracted JSON parse succeeded, fact_score:", data.fact_score);
+        } catch (e2) {
+          console.error("❌ Extracted JSON parse also failed:", e2.message);
+          data = { summary: analysis };
+        }
+      } else {
+        data = { summary: analysis };
+      }
     }
-  } else {
+  } else if (typeof analysis === "object" && analysis !== null) {
+    console.log("AnalysisResults received OBJECT, fact_score:", analysis.fact_score);
     data = analysis;
+  } else {
+    console.log("AnalysisResults received unexpected type:", typeof analysis);
+    data = { summary: String(analysis) };
   }
   
   // Debug log
-  console.log("AnalysisResults data:", { 
+  console.log("AnalysisResults final data:", { 
     hasFactScore: data?.fact_score !== undefined,
     factScore: data?.fact_score,
     hasSummary: !!data?.summary,
+    summaryType: typeof data?.summary,
     keys: Object.keys(data || {})
   });
 
