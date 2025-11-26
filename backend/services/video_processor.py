@@ -1064,6 +1064,41 @@ Remember: Return ONLY the JSON object, no other text."""
                     except Exception as e2:
                         print(f"❌ JSON repair failed: {str(e2)}")
                         
+                        # Try removing the problematic full_transcript_with_highlights field
+                        # This field often contains unescaped characters
+                        try:
+                            print("🔧 Trying to remove full_transcript_with_highlights field...")
+                            # Remove the field using regex
+                            repaired_no_transcript = re.sub(
+                                r',?\s*"full_transcript_with_highlights"\s*:\s*"[^"]*(?:\\"[^"]*)*"',
+                                '',
+                                repaired,
+                                flags=re.DOTALL
+                            )
+                            # Also try a simpler pattern
+                            if '"full_transcript_with_highlights"' in repaired_no_transcript:
+                                repaired_no_transcript = re.sub(
+                                    r'"full_transcript_with_highlights"\s*:\s*".*?"(?=\s*[,}])',
+                                    '',
+                                    repaired_no_transcript,
+                                    flags=re.DOTALL
+                                )
+                            # Clean up any leftover commas
+                            repaired_no_transcript = re.sub(r',\s*,', ',', repaired_no_transcript)
+                            repaired_no_transcript = re.sub(r',\s*}', '}', repaired_no_transcript)
+                            repaired_no_transcript = re.sub(r'{\s*,', '{', repaired_no_transcript)
+                            
+                            parsed = json.loads(repaired_no_transcript)
+                            print(f"✅ Parsed JSON after removing full_transcript_with_highlights")
+                            
+                            # Normalize Claude's response
+                            if 'opinion_based_claims' in parsed and 'opinion_claims' not in parsed:
+                                parsed['opinion_claims'] = parsed.pop('opinion_based_claims')
+                            
+                            return parsed
+                        except Exception as e3:
+                            print(f"❌ Removing transcript field also failed: {str(e3)}")
+                        
                         # Last resort: Try to extract error location and fix it
                         error_match = re.search(r'line (\d+) column (\d+)', str(e2))
                         if error_match:
