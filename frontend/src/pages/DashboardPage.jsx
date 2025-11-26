@@ -80,6 +80,21 @@ export default function DashboardPage() {
     }
   };
 
+  const handleRecheckClaim = async (videoId, claimData) => {
+    try {
+      const response = await videoAPI.recheckClaim(videoId, claimData);
+      // Refresh the video result if we're looking at it
+      if (videoResult && videoResult.id === videoId) {
+        const updatedVideo = await videoAPI.getVideo(videoId);
+        setVideoResult(updatedVideo.data);
+      }
+      return response.data;
+    } catch (err) {
+      console.error('Failed to recheck claim:', err);
+      throw err;
+    }
+  };
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -113,6 +128,7 @@ export default function DashboardPage() {
               onProcessed={handleVideoProcessed}
               onLoadingChange={setIsProcessing}
               onProcessingStart={handleProcessingStart}
+              embedded
             />
           </CardBody>
         </Card>
@@ -138,11 +154,21 @@ export default function DashboardPage() {
               {videoResult.metadata && (
                 <div className="flex gap-4 p-4 bg-default-50 rounded-xl">
                   {videoResult.metadata.thumbnail && (
-                    <Image
-                      src={videoResult.metadata.thumbnail}
-                      alt="Video thumbnail"
-                      className="w-32 h-20 object-cover rounded-lg"
-                    />
+                    <div className="relative group">
+                      <Image
+                        src={videoResult.metadata.thumbnail}
+                        alt="Video thumbnail"
+                        className="w-32 h-20 object-cover rounded-lg"
+                      />
+                      <a 
+                        href={videoResult.url || videoResult.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Icon icon="solar:play-circle-bold" className="text-white" width={32} />
+                      </a>
+                    </div>
                   )}
                   <div className="flex-1">
                     <h3 className="font-semibold">{videoResult.metadata?.title || videoResult.title}</h3>
@@ -152,16 +178,51 @@ export default function DashboardPage() {
                         {videoResult.metadata.author}
                       </p>
                     )}
-                    <p className="text-xs text-default-400">
+                    <p className="text-xs text-default-400 mb-2">
                       {videoResult.platform} • {videoResult.duration_minutes?.toFixed(1)} min
                     </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        as="a"
+                        href={videoResult.url || videoResult.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startContent={<Icon icon="solar:play-circle-linear" width={16} />}
+                      >
+                        Watch
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<Icon icon="solar:copy-linear" width={16} />}
+                        onPress={async () => {
+                          try {
+                            await navigator.clipboard.writeText(videoResult.url || videoResult.video_url);
+                            // Could add toast notification here
+                          } catch (err) {
+                            console.error('Failed to copy:', err);
+                          }
+                        }}
+                      >
+                        Copy URL
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
 
               <Divider />
 
-              <AnalysisResults analysis={videoResult.analysis} />
+              <AnalysisResults 
+                analysis={videoResult.analysis}
+                videoId={videoResult.id}
+                onRecheck={handleRecheckClaim}
+                transcript={videoResult.transcription}
+                highlightedTranscript={videoResult.highlighted_transcript}
+              />
             </CardBody>
           </Card>
         )}

@@ -1,67 +1,7 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
-:root {
-  /* Primary Colors */
-  --primary-blue: #667eea;
-  --primary-purple: #764ba2;
-  --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
-  /* Text Colors */
-  --text-dark: #333;
-  --text-medium: #666;
-  --text-light: #999;
-  
-  /* Background Colors */
-  --bg-white: #ffffff;
-  --bg-light: #f9f9f9;
-  --bg-gray: #f0f0f0;
-  
-  /* Status Colors */
-  --success-green: #10b981;
-  --warning-yellow: #f59e0b;
-  --error-red: #ef4444;
-  --info-blue: #3b82f6;
-  
-  /* Border Colors */
-  --border-light: #e0e0e0;
-  --border-medium: #d0d0d0;
+/* Override default-100 in dark mode */
+.dark .bg-default-100 {
+  background-color: hsl(240deg 31.44% 8.5%);
 }
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: var(--text-dark);
-  background-color: var(--bg-light);
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-a {
-  color: var(--primary-blue);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-input, textarea {
-  font-family: inherit;
-}
-

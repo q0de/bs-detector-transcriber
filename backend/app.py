@@ -11,6 +11,13 @@ if sys.platform == 'win32':
 
 load_dotenv()
 
+# Initialize and print feature flags on startup
+try:
+    from config import FeatureFlags
+    FeatureFlags.print_status()
+except Exception as e:
+    print(f"⚠️ Could not load feature flags: {e}")
+
 app = Flask(__name__)
 
 # CORS allowed origins
@@ -122,11 +129,33 @@ def root():
 def health():
     """Health check endpoint - minimal dependencies, no auth required"""
     import datetime
+    try:
+        from config import FeatureFlags
+        feature_flags = FeatureFlags.get_status()
+    except:
+        feature_flags = {}
+    
     return {
         'status': 'healthy', 
         'timestamp': datetime.datetime.utcnow().isoformat(),
-        'cors_origins': allowed_origins
+        'cors_origins': allowed_origins,
+        'feature_flags': feature_flags
     }, 200
+
+@app.route('/api/admin/feature-flags', methods=['GET'])
+def get_feature_flags():
+    """Get feature flag status (for monitoring)"""
+    try:
+        from config import FeatureFlags
+        return jsonify({
+            'success': True,
+            'feature_flags': FeatureFlags.get_status()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/test-proxy', methods=['GET'])
 def test_proxy():
