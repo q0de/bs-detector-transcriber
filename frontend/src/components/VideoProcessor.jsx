@@ -165,7 +165,9 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
 
   return (
     <Card 
-      className={`w-full max-w-2xl mx-auto ${embedded ? 'shadow-none bg-transparent' : 'bg-black/50 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'}`}
+      isBlurred={!embedded}
+      shadow={embedded ? "none" : "md"}
+      className={`w-full max-w-2xl mx-auto ${embedded ? 'bg-transparent' : 'bg-background/60 dark:bg-default-100/50 p-3'}`}
     >
       <CardBody className="gap-6 p-6">
         {/* Input Type Tabs */}
@@ -175,11 +177,12 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           color="primary"
           variant="solid"
           classNames={{
-            tabList: "bg-default-100/50 p-1 rounded-lg",
-            cursor: "bg-primary shadow-md",
-            tab: "px-6 h-10 min-w-[120px] data-[selected=true]:text-white",
-            tabContent: "group-data-[selected=true]:text-white",
+            tabList: "bg-default-100/70",
+            cursor: "bg-background dark:bg-default-200/30",
+            tab: "px-6 h-10 min-w-[120px] data-[hover-unselected=true]:opacity-90",
+            tabContent: "group-data-[selected=true]:text-foreground",
           }}
+          radius="full"
         >
           <Tab
             key="url"
@@ -238,7 +241,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex gap-4 p-4 rounded-xl transition-all cursor-pointer group bg-default-100/30 hover:bg-default-100/50 border border-default-200/50"
+            className="flex gap-4 p-4 rounded-xl transition-all cursor-pointer group bg-background/60 dark:bg-default-100/50 hover:bg-default-100/70"
             title="Click to open video"
           >
             {videoMetadata.thumbnail && (
@@ -280,9 +283,9 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           <p className="text-sm text-default-600 font-medium">Analysis Type:</p>
           <div className="grid grid-cols-2 gap-3">
             <Button
-              variant={analysisType === "summarize" ? "solid" : "bordered"}
+              variant={analysisType === "summarize" ? "solid" : "flat"}
               color={analysisType === "summarize" ? "primary" : "default"}
-              className={`h-auto py-4 flex-col ${analysisType !== "summarize" ? "bg-default-100/30 border-default-200/50 hover:bg-default-100/50" : ""}`}
+              className="h-auto py-4 flex-col bg-background/60 dark:bg-default-100/50"
               onPress={() => setAnalysisType("summarize")}
               isDisabled={isLoading}
             >
@@ -291,9 +294,9 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
               <span className="text-xs opacity-70">Quick overview • 1× minutes</span>
             </Button>
             <Button
-              variant={analysisType === "fact-check" ? "solid" : "bordered"}
+              variant={analysisType === "fact-check" ? "solid" : "flat"}
               color={analysisType === "fact-check" ? "secondary" : "default"}
-              className={`h-auto py-4 flex-col ${analysisType !== "fact-check" ? "bg-default-100/30 border-default-200/50 hover:bg-default-100/50" : ""}`}
+              className="h-auto py-4 flex-col bg-background/60 dark:bg-default-100/50"
               onPress={() => setAnalysisType("fact-check")}
               isDisabled={isLoading}
             >
