@@ -714,12 +714,10 @@ IMPORTANT: In correction_notes, document specific corrections:
 Be thorough and specific in your correction notes!"""
 
             # Try multiple models with fallback (same as analyze_with_claude)
-            # Prioritize Sonnet models for better re-check quality
+            # Use Haiku - reliable and fast
             models_to_try = [
-                "claude-3-5-sonnet-20241022",  # Claude 3.5 Sonnet (Oct 2024) - BEST
-                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024) - fast fallback
-                "claude-3-opus-20240229",      # Claude 3 Opus (Feb 2024) - older but reliable
-                "claude-3-haiku-20240307",     # Claude 3 Haiku (fallback)
+                "claude-3-5-haiku-20241022",   # Claude 3.5 Haiku (Oct 2024) - reliable
+                "claude-3-haiku-20240307",     # Claude 3 Haiku (older fallback)
             ]
             
             message = None
@@ -956,12 +954,10 @@ Remember: Return ONLY the JSON object, no other text."""
             print(f"Sending {len(prompt)} characters to Claude...")
             
             # Try different models in order of preference with their max_tokens limits
-            # Prioritize Sonnet models for better quality, especially for highlights
+            # Use Haiku - reliable and fast
             models_to_try = [
-                ("claude-3-5-sonnet-20241022", 8000),   # Claude 3.5 Sonnet (Oct 2024) - BEST
-                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024) - fast fallback
-                ("claude-3-opus-20240229", 8000),      # Claude 3 Opus (Feb 2024) - older but reliable
-                ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (fallback)
+                ("claude-3-5-haiku-20241022", 8000),    # Claude 3.5 Haiku (Oct 2024) - reliable
+                ("claude-3-haiku-20240307", 4096),      # Claude 3 Haiku (older fallback)
             ]
             
             message = None
