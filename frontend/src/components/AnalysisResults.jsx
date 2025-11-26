@@ -171,15 +171,19 @@ function SummaryCard({ summary }) {
     let importantDetails = null;
     let conclusion = null;
     
+    // Remove "Summary of the Transcription:" header if present (redundant)
+    mainContent = mainContent.replace(/^Summary of the Transcription:?\s*/i, '');
+    mainContent = mainContent.replace(/^Summary:?\s*/i, '');
+    
     // Extract "Important Details:" section
-    const importantMatch = text.match(/Important Details?:?\s*[-–]?\s*([\s\S]*?)(?=Overall Conclusion|$)/i);
+    const importantMatch = mainContent.match(/Important Details?:?\s*[-–]?\s*([\s\S]*?)(?=Overall Conclusion|$)/i);
     if (importantMatch) {
       importantDetails = importantMatch[1].trim();
       mainContent = mainContent.replace(importantMatch[0], '');
     }
     
     // Extract "Overall Conclusion:" section
-    const conclusionMatch = text.match(/Overall Conclusion:?\s*([\s\S]*?)$/i);
+    const conclusionMatch = mainContent.match(/Overall Conclusion:?\s*([\s\S]*?)$/i);
     if (conclusionMatch) {
       conclusion = conclusionMatch[1].trim();
       mainContent = mainContent.replace(conclusionMatch[0], '');
@@ -292,7 +296,7 @@ function SummaryCard({ summary }) {
               <Icon icon="solar:info-circle-linear" width={18} />
               Important Details
             </h4>
-            <div className="text-warning-700 dark:text-warning-200">
+            <div className="text-foreground/90">
               {formatBulletList(importantDetails)}
             </div>
           </div>
@@ -300,12 +304,12 @@ function SummaryCard({ summary }) {
         
         {/* Overall Conclusion section */}
         {conclusion && (
-          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-            <h4 className="font-semibold text-primary flex items-center gap-2 mb-3 text-sm">
+          <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/20">
+            <h4 className="font-semibold text-secondary flex items-center gap-2 mb-3 text-sm">
               <Icon icon="solar:lightbulb-linear" width={18} />
               Overall Conclusion
             </h4>
-            <p className="text-primary-700 dark:text-primary-200 text-small leading-relaxed">
+            <p className="text-foreground/90 text-small leading-relaxed">
               {conclusion}
             </p>
           </div>
