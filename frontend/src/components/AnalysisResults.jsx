@@ -192,22 +192,81 @@ function SummaryCard({ summary }) {
     return { mainContent: mainContent.trim(), importantDetails, conclusion };
   };
   
-  // Format summary text - handle numbered sections and bullet points
+  // Format summary text - handle markdown and numbered sections
   const formatSummary = (text) => {
-    // Split by numbered sections (1. 2. 3. etc) or newlines
-    const sections = text.split(/(?=\d+\.\s+[A-Z])|(?:\n\s*\n)/);
+    // Clean up markdown formatting
+    let cleaned = text
+      // Remove empty markdown headers (#### with nothing after)
+      .replace(/^#{1,6}\s*$/gm, '')
+      // Remove redundant "Summary of the Video Transcription" headers
+      .replace(/^#{1,6}\s*Summary of the.*$/gim, '')
+      // Clean up extra whitespace
+      .replace(/\n{3,}/g, '\n\n');
+    
+    // Convert markdown bold **text** to styled spans
+    const formatBoldText = (str) => {
+      const parts = str.split(/\*\*([^*]+)\*\*/g);
+      return parts.map((part, i) => 
+        i % 2 === 1 ? <strong key={i} className="text-foreground font-semibold">{part}</strong> : part
+      );
+    };
+    
+    // Split into sections by numbered headers or markdown headers
+    const sections = cleaned.split(/(?=\d+\.\s+[A-Z])|(?=^#{1,4}\s+\d+)/m).filter(s => s.trim());
     
     return sections.map((section, idx) => {
-      const trimmed = section.trim();
+      let trimmed = section.trim();
       if (!trimmed) return null;
       
-      // Check if this is a numbered section header
-      const headerMatch = trimmed.match(/^(\d+)\.\s+([^:]+):(.*)/s);
+      // Handle markdown header format (### 1. Title or #### Title)
+      const mdHeaderMatch = trimmed.match(/^#{1,6}\s*(\d+)?\.?\s*([^\n]+)\n?([\s\S]*)/);
+      if (mdHeaderMatch) {
+        const [, num, title, content] = mdHeaderMatch;
+        const cleanTitle = title.replace(/\*\*/g, '').trim();
+        const cleanContent = content?.trim() || '';
+        
+        // Parse bullet points (- or * at start of line)
+        const bullets = cleanContent
+          .split(/\n/)
+          .map(line => line.replace(/^[-*]\s*/, '').trim())
+          .filter(line => line && !line.match(/^#{1,6}/));
+        
+        return (
+          <div key={idx} className="mb-5">
+            <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              {num && (
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary text-sm font-bold">
+                  {num}
+                </span>
+              )}
+              {cleanTitle}
+            </h4>
+            {bullets.length > 0 ? (
+              <ul className="space-y-2 ml-9">
+                {bullets.map((bullet, bIdx) => (
+                  <li key={bIdx} className="text-default-600 text-small flex items-start gap-2">
+                    <Icon icon="solar:arrow-right-linear" className="text-primary mt-0.5 flex-shrink-0" width={14} />
+                    <span>{formatBoldText(bullet)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : cleanContent ? (
+              <p className="text-default-600 text-small ml-9">{formatBoldText(cleanContent)}</p>
+            ) : null}
+          </div>
+        );
+      }
       
+      // Check if this is a numbered section header (1. Title: content)
+      const headerMatch = trimmed.match(/^(\d+)\.\s+([^:\n]+):?([\s\S]*)/);
       if (headerMatch) {
         const [, num, title, content] = headerMatch;
-        // Split content by bullet points
-        const bullets = content.split(/\s*-\s+/).filter(b => b.trim());
+        const cleanContent = content?.trim() || '';
+        // Split content by bullet points (-, *, or newlines with dashes)
+        const bullets = cleanContent
+          .split(/\n/)
+          .map(line => line.replace(/^[-*]\s*/, '').trim())
+          .filter(b => b);
         
         return (
           <div key={idx} className="mb-5">
@@ -215,34 +274,38 @@ function SummaryCard({ summary }) {
               <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary text-sm font-bold">
                 {num}
               </span>
-              {title.trim()}
+              {title.replace(/\*\*/g, '').trim()}
             </h4>
             {bullets.length > 1 ? (
               <ul className="space-y-2 ml-9">
                 {bullets.map((bullet, bIdx) => (
                   <li key={bIdx} className="text-default-600 text-small flex items-start gap-2">
                     <Icon icon="solar:arrow-right-linear" className="text-primary mt-0.5 flex-shrink-0" width={14} />
-                    <span>{bullet.trim()}</span>
+                    <span>{formatBoldText(bullet)}</span>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-default-600 text-small ml-9">{content.trim()}</p>
-            )}
+            ) : cleanContent ? (
+              <p className="text-default-600 text-small ml-9">{formatBoldText(cleanContent)}</p>
+            ) : null}
           </div>
         );
       }
       
       // Regular paragraph - check for bullet points
-      const hasBullets = trimmed.includes(' - ');
+      const lines = trimmed.split('\n').filter(l => l.trim());
+      const hasBullets = lines.some(l => /^[-*]\s/.test(l.trim()));
+      
       if (hasBullets) {
-        const parts = trimmed.split(/\s*-\s+/).filter(p => p.trim());
+        const bulletItems = lines
+          .map(l => l.replace(/^[-*]\s*/, '').trim())
+          .filter(l => l);
         return (
           <ul key={idx} className="space-y-2 mb-4">
-            {parts.map((part, pIdx) => (
-              <li key={pIdx} className="text-default-600 text-small flex items-start gap-2">
+            {bulletItems.map((item, iIdx) => (
+              <li key={iIdx} className="text-default-600 text-small flex items-start gap-2">
                 <Icon icon="solar:arrow-right-linear" className="text-primary mt-0.5 flex-shrink-0" width={14} />
-                <span>{part.trim()}</span>
+                <span>{formatBoldText(item)}</span>
               </li>
             ))}
           </ul>
@@ -251,10 +314,10 @@ function SummaryCard({ summary }) {
       
       return (
         <p key={idx} className="text-default-600 leading-relaxed text-small mb-4">
-          {trimmed}
+          {formatBoldText(trimmed)}
         </p>
       );
-    });
+    }).filter(Boolean);
   };
 
   // Format bullet list from text with dashes
