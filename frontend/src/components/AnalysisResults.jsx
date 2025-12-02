@@ -194,6 +194,11 @@ function SummaryCard({ summary }) {
   
   // Format summary text - handle markdown and numbered sections
   const formatSummary = (text) => {
+    // Guard against null/undefined
+    if (!text || typeof text !== 'string') {
+      return null;
+    }
+    
     // Clean up markdown formatting
     let cleaned = text
       // Remove empty markdown headers (#### with nothing after)
