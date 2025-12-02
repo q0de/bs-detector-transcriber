@@ -1129,6 +1129,24 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
   });
   const displayText = highlightedTranscript || transcript;
   
+  // Check if highlights exist
+  const hasHighlightTags = highlightedTranscript && (
+    highlightedTranscript.includes('[VERIFIED]') ||
+    highlightedTranscript.includes('[FALSE]') ||
+    highlightedTranscript.includes('[UNCERTAIN]') ||
+    highlightedTranscript.includes('[OPINION]')
+  );
+  
+  // Debug logging
+  console.log("🎨 TranscriptCard Debug:", {
+    hasTranscript: !!transcript,
+    hasHighlightedTranscript: !!highlightedTranscript,
+    highlightedTranscriptLength: highlightedTranscript?.length,
+    hasHighlightTags,
+    displayTextLength: displayText?.length,
+    firstHighlightMatch: highlightedTranscript?.match(/\[(VERIFIED|FALSE|UNCERTAIN|OPINION)\]/)?.[0]
+  });
+  
   // Toggle a specific highlight type
   const toggleHighlightType = (type) => {
     setVisibleTypes(prev => ({ ...prev, [type]: !prev[type] }));
@@ -1557,6 +1575,17 @@ export default function AnalysisResults({
     data.opinion_based_claims?.length;
   const hasBias = data.bias_analysis || data.bias;
   const hasTranscript = transcript || highlightedTranscript || data.transcript || data.full_transcript_with_highlights || data.highlighted_transcript;
+
+  // Debug logging for transcript/highlights
+  console.log("📝 Transcript Debug:", {
+    transcriptProp: !!transcript,
+    highlightedTranscriptProp: !!highlightedTranscript,
+    highlightedTranscriptLength: highlightedTranscript?.length,
+    dataTranscript: !!data.transcript,
+    dataFullTranscriptWithHighlights: !!data.full_transcript_with_highlights,
+    hasTranscript,
+    highlightsPreview: highlightedTranscript?.substring(0, 200) || data.full_transcript_with_highlights?.substring(0, 200)
+  });
 
   // If it's just a simple summary (no fact-checking)
   if (!hasFactCheck && !hasClaims && hasSummary) {

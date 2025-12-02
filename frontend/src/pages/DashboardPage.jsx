@@ -224,6 +224,15 @@ export default function DashboardPage() {
 
               <Divider />
 
+              {/* Debug logging */}
+              {console.log("📊 videoResult Debug:", {
+                hasAnalysis: !!videoResult.analysis,
+                analysisType: typeof videoResult.analysis,
+                hasTranscription: !!videoResult.transcription,
+                hasHighlightedTranscript: !!videoResult.highlighted_transcript,
+                analysisHasHighlights: typeof videoResult.analysis === 'object' && !!videoResult.analysis?.full_transcript_with_highlights,
+                analysisKeys: typeof videoResult.analysis === 'object' ? Object.keys(videoResult.analysis) : 'not an object'
+              })}
               <AnalysisResults 
                 analysis={videoResult.analysis}
                 videoId={videoResult.id}
