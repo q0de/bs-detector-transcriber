@@ -555,6 +555,50 @@ class VideoProcessor:
             print(f"❌ Instagram embed scraping failed: {str(e)}")
             raise Exception(f"Couldn't download Instagram video: {str(e)}")
     
+    def try_cobalt_download(self, video_url, output_path):
+        """Try downloading via Cobalt API (alternative to yt-dlp)"""
+        try:
+            import requests
+            print("🌐 Trying Cobalt API for download...")
+            
+            # Cobalt API endpoint
+            cobalt_url = "https://api.cobalt.tools/api/json"
+            
+            headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+            
+            payload = {
+                'url': video_url,
+                'vCodec': 'h264',
+                'vQuality': '360',  # Lower quality for faster download
+                'aFormat': 'mp3',
+                'isAudioOnly': True,  # We only need audio for transcription
+            }
+            
+            response = requests.post(cobalt_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'stream' or data.get('status') == 'redirect':
+                    download_url = data.get('url')
+                    if download_url:
+                        print(f"✅ Cobalt provided download URL")
+                        # Download the audio file
+                        audio_response = requests.get(download_url, timeout=120)
+                        if audio_response.status_code == 200:
+                            with open(output_path, 'wb') as f:
+                                f.write(audio_response.content)
+                            print(f"✅ Audio downloaded via Cobalt API")
+                            return {'duration': 0, 'title': 'Cobalt Download', 'uploader': 'Unknown'}
+            
+            print(f"❌ Cobalt API response: {response.status_code}")
+            return None
+        except Exception as e:
+            print(f"❌ Cobalt API failed: {str(e)[:100]}")
+            return None
+    
     def download_video(self, video_url, output_path):
         """Download video using yt-dlp with anti-bot measures and optional proxy"""
         try:
@@ -568,74 +612,114 @@ class VideoProcessor:
             http_proxy, socks5_proxy = self._get_proxy_urls()
             proxy_url = http_proxy  # Default to HTTP
             
-            ydl_opts = {
+            # Random user agents to rotate
+            import random
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+            ]
+            
+            # Check for cookies file
+            cookies_path = os.path.join(os.path.dirname(__file__), '..', 'cookies.txt')
+            has_cookies = os.path.exists(cookies_path)
+            if has_cookies:
+                print(f"🍪 Found cookies file - will use for authentication")
+            
+            # Different player client strategies to try
+            player_strategies = [
+                {'player_client': ['ios', 'web'], 'player_skip': ['webpage']},
+                {'player_client': ['android', 'web'], 'player_skip': ['webpage', 'configs']},
+                {'player_client': ['tv_embedded'], 'player_skip': ['webpage']},
+                {'player_client': ['web'], 'player_skip': []},
+            ]
+            
+            base_ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': output_path,
                 'quiet': True,
                 'no_warnings': True,
-                # Anti-bot detection measures
-                'extractor_args': {
-                    'youtube': {
-                        'player_client': ['android', 'web'],  # Use mobile client
-                        'player_skip': ['webpage', 'configs'],  # Skip some checks
-                    }
-                },
-                # Rotate user agents
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'User-Agent': random.choice(user_agents),
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
                     'Accept-Encoding': 'gzip, deflate, br',
                     'DNT': '1',
                     'Connection': 'keep-alive',
                     'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
                 },
+                'socket_timeout': 30,
+                'retries': 3,
             }
             
-            # Add proxy if configured (helps bypass datacenter IP blocking)
-            if proxy_url:
-                # Mask credentials for logging
-                masked_proxy = proxy_url.split('@')[1] if '@' in proxy_url else proxy_url
-                print(f"🌐 Using residential proxy for download: {masked_proxy}")
-                ydl_opts['proxy'] = proxy_url
-            else:
-                print(f"⚠️ No proxy configured - datacenter IPs may be blocked by YouTube")
+            # Add cookies if available
+            if has_cookies:
+                base_ydl_opts['cookiefile'] = cookies_path
             
-            # Try HTTP proxy first
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(video_url, download=True)
-                    print(f"✅ Download successful with HTTP proxy")
-                    return info
-            except Exception as http_error:
-                error_str = str(http_error)
-                print(f"❌ HTTP proxy download failed: {error_str[:200]}")
+            last_error = None
+            
+            # Strategy 1: Try with proxy and different player clients
+            for i, strategy in enumerate(player_strategies):
+                print(f"🔄 Trying strategy {i+1}/{len(player_strategies)}: {strategy['player_client']}")
                 
-                # If HTTP proxy fails with 403, try SOCKS5
-                if socks5_proxy and ('403' in error_str or 'Forbidden' in error_str):
-                    print(f"🔄 HTTP proxy failed with 403, trying SOCKS5 proxy...")
-                    ydl_opts['proxy'] = socks5_proxy
-                    try:
-                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                            info = ydl.extract_info(video_url, download=True)
-                            print(f"✅ Download successful with SOCKS5 proxy")
-                            return info
-                    except Exception as socks_error:
-                        print(f"❌ SOCKS5 proxy also failed: {str(socks_error)[:200]}")
-                        # Try without proxy as last resort
-                        print(f"🔄 Trying without proxy as last resort...")
-                        del ydl_opts['proxy']
-                        try:
-                            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                                info = ydl.extract_info(video_url, download=True)
-                                print(f"✅ Download successful without proxy")
-                                return info
-                        except Exception as no_proxy_error:
-                            print(f"❌ Direct download also failed: {str(no_proxy_error)[:200]}")
-                            # Raise the original error with more context
-                            raise Exception(f"All download attempts failed. Last error: {str(no_proxy_error)[:300]}")
-                else:
-                    raise http_error
+                ydl_opts = base_ydl_opts.copy()
+                ydl_opts['extractor_args'] = {'youtube': strategy}
+                ydl_opts['http_headers'] = base_ydl_opts['http_headers'].copy()
+                ydl_opts['http_headers']['User-Agent'] = random.choice(user_agents)
+                
+                if proxy_url:
+                    masked_proxy = proxy_url.split('@')[1] if '@' in proxy_url else proxy_url
+                    print(f"   🌐 Using proxy: {masked_proxy}")
+                    ydl_opts['proxy'] = proxy_url
+                
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(video_url, download=True)
+                        print(f"✅ Download successful with strategy {i+1}")
+                        return info
+                except Exception as e:
+                    last_error = e
+                    error_str = str(e).lower()
+                    print(f"   ❌ Strategy {i+1} failed: {str(e)[:100]}")
+                    
+                    # If bot detection, try next strategy
+                    if 'bot' in error_str or 'sign in' in error_str:
+                        continue
+                    # If 403, try without proxy on next iteration
+                    if '403' in error_str:
+                        proxy_url = None  # Disable proxy for remaining attempts
+                        continue
+            
+            # Strategy 2: Try without proxy
+            print(f"🔄 Trying without proxy...")
+            for i, strategy in enumerate(player_strategies[:2]):  # Only try first 2 strategies
+                ydl_opts = base_ydl_opts.copy()
+                ydl_opts['extractor_args'] = {'youtube': strategy}
+                ydl_opts['http_headers']['User-Agent'] = random.choice(user_agents)
+                
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(video_url, download=True)
+                        print(f"✅ Download successful without proxy")
+                        return info
+                except Exception as e:
+                    last_error = e
+                    print(f"   ❌ No-proxy attempt {i+1} failed: {str(e)[:100]}")
+            
+            # Strategy 3: Try Cobalt API as fallback
+            cobalt_result = self.try_cobalt_download(video_url, output_path)
+            if cobalt_result:
+                return cobalt_result
+            
+            # All strategies failed
+            raise Exception(f"All download strategies failed. Last error: {str(last_error)[:300]}")
+                
         except Exception as e:
             raise Exception(f"Couldn't download video: {str(e)}")
     

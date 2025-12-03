@@ -450,8 +450,8 @@ def process_video():
             print("⚠️ Detected YouTube IP blocking/bot detection")
             return jsonify({
                 'success': False,
-                'error': 'YouTube is temporarily blocking access to this video due to bot detection. This is a temporary issue with YouTube\'s anti-bot measures.',
-                'suggestion': 'Please try again in a few minutes, or try a different video. Most videos will work once the temporary block clears.',
+                'error': 'YouTube is temporarily blocking access. This video may require authentication to access.',
+                'suggestion': 'Please try: 1) A different video, 2) Waiting a few minutes and trying again, 3) A video with subtitles/transcripts enabled. Videos that have available transcripts are more likely to work.',
                 'error_type': 'youtube_blocked'
             }), 400
         elif 'proxy' in error_msg.lower() or 'tunnel connection' in error_msg.lower():
