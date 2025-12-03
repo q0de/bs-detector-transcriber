@@ -169,6 +169,19 @@ function SummaryCard({ summary }) {
   const summaryText = typeof summary === 'string' ? summary : 
     (typeof summary === 'object' ? (summary.text || summary.content || JSON.stringify(summary)) : String(summary));
   
+  // Convert markdown bold **text** to styled spans - defined at component level so it can be reused
+  const formatBoldText = (str) => {
+    if (!str || typeof str !== 'string') return str;
+    // Also clean up any remaining markdown artifacts
+    const cleanStr = str
+      .replace(/^#{1,6}\s*\d*\.?\s*/g, '') // Remove markdown headers at start
+      .replace(/#{1,6}\s*$/g, ''); // Remove trailing # symbols
+    const parts = cleanStr.split(/\*\*([^*]+)\*\*/g);
+    return parts.map((part, i) => 
+      i % 2 === 1 ? <strong key={i} className="text-foreground font-semibold">{part}</strong> : part
+    );
+  };
+  
   // Extract special sections
   const extractSpecialSections = (text) => {
     if (!text || typeof text !== 'string') {
@@ -209,20 +222,16 @@ function SummaryCard({ summary }) {
     
     // Clean up markdown formatting
     let cleaned = text
-      // Remove empty markdown headers (#### with nothing after)
+      // Remove empty markdown headers (#### with nothing after, or just # on a line)
       .replace(/^#{1,6}\s*$/gm, '')
+      // Remove standalone # symbols
+      .replace(/^#\s*$/gm, '')
       // Remove redundant "Summary of the Video Transcription" headers
       .replace(/^#{1,6}\s*Summary of the.*$/gim, '')
+      // Remove "Comprehensive Summary" headers
+      .replace(/^#{1,6}\s*Comprehensive Summary.*$/gim, '')
       // Clean up extra whitespace
       .replace(/\n{3,}/g, '\n\n');
-    
-    // Convert markdown bold **text** to styled spans
-    const formatBoldText = (str) => {
-      const parts = str.split(/\*\*([^*]+)\*\*/g);
-      return parts.map((part, i) => 
-        i % 2 === 1 ? <strong key={i} className="text-foreground font-semibold">{part}</strong> : part
-      );
-    };
     
     // Split into sections by numbered headers or markdown headers
     const sections = cleaned.split(/(?=\d+\.\s+[A-Z])|(?=^#{1,4}\s+\d+)/m).filter(s => s.trim());
@@ -333,18 +342,31 @@ function SummaryCard({ summary }) {
     }).filter(Boolean);
   };
 
-  // Format bullet list from text with dashes
+  // Format bullet list from text with dashes - now handles **bold** markdown
   const formatBulletList = (text) => {
-    const items = text.split(/\s*-\s+/).filter(item => item.trim());
-    if (items.length <= 1) {
-      return <p className="text-default-600 text-small">{text}</p>;
+    if (!text) return null;
+    // Split by newlines or dashes
+    const lines = text.split(/\n/).filter(line => line.trim());
+    const items = lines.map(line => {
+      // Clean up the line - remove leading dashes/bullets and markdown headers
+      return line
+        .replace(/^[-*•→]\s*/, '')
+        .replace(/^#{1,6}\s*\d*\.?\s*/, '')
+        .trim();
+    }).filter(item => item && !item.match(/^#{1,6}\s*$/));
+    
+    if (items.length === 0) {
+      return <p className="text-default-600 text-small">{formatBoldText(text)}</p>;
+    }
+    if (items.length === 1) {
+      return <p className="text-default-600 text-small">{formatBoldText(items[0])}</p>;
     }
     return (
       <ul className="space-y-2">
         {items.map((item, idx) => (
           <li key={idx} className="text-default-600 text-small flex items-start gap-2">
             <Icon icon="solar:arrow-right-linear" className="text-inherit mt-0.5 flex-shrink-0 opacity-70" width={14} />
-            <span>{item.trim()}</span>
+            <span>{formatBoldText(item)}</span>
           </li>
         ))}
       </ul>
@@ -386,7 +408,7 @@ function SummaryCard({ summary }) {
               Overall Conclusion
             </h4>
             <p className="text-foreground/90 text-small leading-relaxed">
-              {conclusion}
+              {formatBoldText(conclusion.replace(/^#{1,6}\s*\d*\.?\s*/, ''))}
             </p>
           </div>
         )}
