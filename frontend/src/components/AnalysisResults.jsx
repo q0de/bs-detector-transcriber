@@ -165,8 +165,16 @@ function ClaimsStatsCard({ analysis }) {
 function SummaryCard({ summary }) {
   if (!summary) return null;
   
+  // Convert summary to string if it's not already
+  const summaryText = typeof summary === 'string' ? summary : 
+    (typeof summary === 'object' ? (summary.text || summary.content || JSON.stringify(summary)) : String(summary));
+  
   // Extract special sections
   const extractSpecialSections = (text) => {
+    if (!text || typeof text !== 'string') {
+      return { mainContent: text || '', importantDetails: null, conclusion: null };
+    }
+    
     let mainContent = text;
     let importantDetails = null;
     let conclusion = null;
@@ -343,7 +351,7 @@ function SummaryCard({ summary }) {
     );
   };
 
-  const { mainContent, importantDetails, conclusion } = extractSpecialSections(summary);
+  const { mainContent, importantDetails, conclusion } = extractSpecialSections(summaryText);
   
   return (
     <Card className="dark:border-default-100 border border-transparent">
@@ -1577,14 +1585,19 @@ export default function AnalysisResults({
   const hasTranscript = transcript || highlightedTranscript || data.transcript || data.full_transcript_with_highlights || data.highlighted_transcript;
 
   // Debug logging for transcript/highlights
+  const safeSubstring = (str, start, end) => {
+    if (typeof str === 'string') return str.substring(start, end);
+    return String(str || '').substring(start, end);
+  };
   console.log("📝 Transcript Debug:", {
     transcriptProp: !!transcript,
     highlightedTranscriptProp: !!highlightedTranscript,
-    highlightedTranscriptLength: highlightedTranscript?.length,
+    highlightedTranscriptType: typeof highlightedTranscript,
+    highlightedTranscriptLength: typeof highlightedTranscript === 'string' ? highlightedTranscript.length : 'N/A',
     dataTranscript: !!data.transcript,
     dataFullTranscriptWithHighlights: !!data.full_transcript_with_highlights,
     hasTranscript,
-    highlightsPreview: highlightedTranscript?.substring(0, 200) || data.full_transcript_with_highlights?.substring(0, 200)
+    highlightsPreview: safeSubstring(highlightedTranscript, 0, 200) || safeSubstring(data.full_transcript_with_highlights, 0, 200)
   });
 
   // If it's just a simple summary (no fact-checking)
