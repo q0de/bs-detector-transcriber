@@ -222,16 +222,22 @@ function SummaryCard({ summary }) {
     
     // Clean up markdown formatting
     let cleaned = text
-      // Remove empty markdown headers (#### with nothing after, or just # on a line)
-      .replace(/^#{1,6}\s*$/gm, '')
-      // Remove standalone # symbols
-      .replace(/^#\s*$/gm, '')
+      // Remove lines that are ONLY # symbols (any number) with optional whitespace
+      .replace(/^#+\s*$/gm, '')
+      // Remove empty markdown headers (#### with nothing meaningful after)
+      .replace(/^#{1,6}\s*(?:\d+\.?)?\s*$/gm, '')
       // Remove redundant "Summary of the Video Transcription" headers
       .replace(/^#{1,6}\s*Summary of the.*$/gim, '')
       // Remove "Comprehensive Summary" headers
       .replace(/^#{1,6}\s*Comprehensive Summary.*$/gim, '')
-      // Clean up extra whitespace
-      .replace(/\n{3,}/g, '\n\n');
+      // Remove lines that start with just # followed by space and number with period and nothing else
+      .replace(/^#{1,6}\s+\d+\.\s*$/gm, '')
+      // Clean up multiple consecutive newlines
+      .replace(/\n{3,}/g, '\n\n')
+      // Remove leading/trailing whitespace from each line but preserve structure
+      .split('\n').map(line => line.trim()).join('\n')
+      // Clean up any remaining empty lines at the start
+      .replace(/^\n+/, '');
     
     // Split into sections by numbered headers or markdown headers
     const sections = cleaned.split(/(?=\d+\.\s+[A-Z])|(?=^#{1,4}\s+\d+)/m).filter(s => s.trim());
@@ -240,11 +246,16 @@ function SummaryCard({ summary }) {
       let trimmed = section.trim();
       if (!trimmed) return null;
       
+      // Skip sections that are just numbers with periods (e.g., "3 ." or "3.")
+      if (/^\d+\s*\.?\s*$/.test(trimmed)) return null;
+      
       // Handle markdown header format (### 1. Title or #### Title)
       const mdHeaderMatch = trimmed.match(/^#{1,6}\s*(\d+)?\.?\s*([^\n]+)\n?([\s\S]*)/);
       if (mdHeaderMatch) {
         const [, num, title, content] = mdHeaderMatch;
-        const cleanTitle = title.replace(/\*\*/g, '').trim();
+        const cleanTitle = title.replace(/\*\*/g, '').replace(/^\.+\s*/, '').trim();
+        // Skip if no meaningful title
+        if (!cleanTitle || cleanTitle === '.') return null;
         const cleanContent = content?.trim() || '';
         
         // Parse bullet points (- or * at start of line)
@@ -283,6 +294,9 @@ function SummaryCard({ summary }) {
       const headerMatch = trimmed.match(/^(\d+)\.\s+([^:\n]+):?([\s\S]*)/);
       if (headerMatch) {
         const [, num, title, content] = headerMatch;
+        const cleanTitle = title.replace(/\*\*/g, '').trim();
+        // Skip if no meaningful title
+        if (!cleanTitle || cleanTitle === '.' || cleanTitle.length < 2) return null;
         const cleanContent = content?.trim() || '';
         // Split content by bullet points (-, *, or newlines with dashes)
         const bullets = cleanContent
@@ -1624,7 +1638,18 @@ export default function AnalysisResults({
 
   // If it's just a simple summary (no fact-checking)
   if (!hasFactCheck && !hasClaims && hasSummary) {
-    return <SummaryCard summary={data.summary} />;
+    return (
+      <div className="space-y-6">
+        <SummaryCard summary={data.summary} />
+        {/* Also show transcript for summaries */}
+        {hasTranscript && (
+          <TranscriptCard 
+            transcript={transcript || data.transcript}
+            highlightedTranscript={highlightedTranscript || data.full_transcript_with_highlights || data.highlighted_transcript}
+          />
+        )}
+      </div>
+    );
   }
 
   // Full fact-check display
