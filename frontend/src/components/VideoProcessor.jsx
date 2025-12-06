@@ -63,7 +63,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (selectedType = analysisType) => {
     if (inputType === "url" && !url) {
       setError("Please enter a video URL");
       return;
@@ -90,7 +90,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
     const cleanUrl = url.trim();
 
     if (onProcessingStart) {
-      onProcessingStart(cleanUrl, analysisType);
+      onProcessingStart(cleanUrl, selectedType);
     }
 
     try {
@@ -107,7 +107,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
       if (isAnonymous) {
         response = await videoAPI.processFree(cleanUrl);
       } else {
-        response = await videoAPI.process(cleanUrl, analysisType);
+        response = await videoAPI.process(cleanUrl, selectedType);
       }
 
       setProcessingStatus("Analysis complete!");
@@ -277,35 +277,6 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
 
         <Divider />
 
-        {/* Analysis Type */}
-        <div className="space-y-3">
-          <p className="text-sm text-default-600 font-medium">Analysis Type:</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={analysisType === "summarize" ? "solid" : "bordered"}
-              color={analysisType === "summarize" ? "primary" : "default"}
-              className={`h-auto py-4 flex-col ${analysisType !== "summarize" ? "bg-default-100/30 border-default-200/50 hover:bg-default-100/50" : ""}`}
-              onPress={() => setAnalysisType("summarize")}
-              isDisabled={isLoading}
-            >
-              <Icon icon="solar:document-text-linear" width={24} />
-              <span className="font-semibold">Summarize</span>
-              <span className="text-xs opacity-70">Quick overview • 1× minutes</span>
-            </Button>
-            <Button
-              variant={analysisType === "fact-check" ? "solid" : "bordered"}
-              color={analysisType === "fact-check" ? "secondary" : "default"}
-              className={`h-auto py-4 flex-col ${analysisType !== "fact-check" ? "bg-default-100/30 border-default-200/50 hover:bg-default-100/50" : ""}`}
-              onPress={() => setAnalysisType("fact-check")}
-              isDisabled={isLoading}
-            >
-              <Icon icon="solar:magnifer-linear" width={24} />
-              <span className="font-semibold">Fact Check ⭐</span>
-              <span className="text-xs opacity-70">Full BS detection • 2.5× minutes</span>
-            </Button>
-          </div>
-        </div>
-
         {/* Error Message */}
         {error && (
           <div className="p-3 rounded-lg bg-danger-50 text-danger text-sm flex items-center gap-2">
@@ -338,18 +309,39 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           </Card>
         )}
 
-        {/* Submit Button */}
-        <Button
-          color="primary"
-          size="lg"
-          onPress={handleSubmit}
-          isLoading={isLoading}
-          isDisabled={isLoading || (inputType === "url" && !url) || (inputType === "file" && !file)}
-          startContent={!isLoading && <Icon icon="solar:play-bold" width={20} />}
-          className="font-semibold"
-        >
-          {isLoading ? "Processing..." : "Analyze Video - Free →"}
-        </Button>
+        {/* Action Buttons - Summarize & Fact Check */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            color="primary"
+            size="lg"
+            className="h-auto py-5 flex-col gap-1"
+            onPress={() => {
+              setAnalysisType("summarize");
+              handleSubmit("summarize");
+            }}
+            isLoading={isLoading && analysisType === "summarize"}
+            isDisabled={isLoading || (inputType === "url" && !url) || (inputType === "file" && !file)}
+          >
+            <Icon icon="solar:document-text-linear" width={24} />
+            <span className="font-semibold">Summarize</span>
+            <span className="text-xs opacity-70">Quick overview • 1× minutes</span>
+          </Button>
+          <Button
+            color="secondary"
+            size="lg"
+            className="h-auto py-5 flex-col gap-1"
+            onPress={() => {
+              setAnalysisType("fact-check");
+              handleSubmit("fact-check");
+            }}
+            isLoading={isLoading && analysisType === "fact-check"}
+            isDisabled={isLoading || (inputType === "url" && !url) || (inputType === "file" && !file)}
+          >
+            <Icon icon="solar:magnifer-linear" width={24} />
+            <span className="font-semibold">Fact Check ⭐</span>
+            <span className="text-xs opacity-70">Full BS detection • 2.5× minutes</span>
+          </Button>
+        </div>
       </CardBody>
     </Card>
   );

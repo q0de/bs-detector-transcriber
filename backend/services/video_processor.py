@@ -8,6 +8,7 @@ from datetime import datetime
 import tempfile
 import re
 import requests
+import difflib
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
@@ -137,7 +138,7 @@ class VideoProcessor:
         if not transcript or not isinstance(analysis, dict):
             return transcript
         
-        print("🎨 Auto-highlighting transcript based on claims...")
+        print("🎨 Auto-highlighting transcript based on claims (Exact + Fuzzy Match)...")
         
         # Collect all claims with their verdicts
         claims_with_tags = []
@@ -173,39 +174,74 @@ class VideoProcessor:
             
             print(f"  🔍 Searching for {tag}: \"{normalized_claim[:80]}...\"")
             
-            import re
-            
             # Strategy 1: Try exact match (case-insensitive, flexible whitespace)
             pattern = re.escape(normalized_claim)
             pattern = pattern.replace(r'\ ', r'\s+')
             matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
             
-            # Strategy 2: If no exact match, try partial match with key words (5+ words minimum)
-            if not matches and len(normalized_claim.split()) >= 5:
-                # Extract key words (5-7 consecutive words from middle of claim)
-                words = normalized_claim.split()
-                # Try 7-word phrase first, then 5-word
-                for window_size in [7, 5]:
-                    if len(words) >= window_size and not matches:
-                        start_idx = len(words) // 2 - window_size // 2
-                        key_phrase = ' '.join(words[start_idx:start_idx + window_size])
-                        pattern = re.escape(key_phrase)
-                        pattern = pattern.replace(r'\ ', r'\s+')
-                        matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
+            # Strategy 2: Fuzzy matching with difflib
+            if not matches:
+                # Split transcript into sentences/segments to find best candidate
+                # Split by common sentence terminators
+                segments = re.split(r'(?<=[.!?])\s+', highlighted)
+                
+                # Clean segments for comparison (remove tags if any exist from previous iterations)
+                clean_segments = [re.sub(r'\[/?(?:VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', s).strip() for s in segments]
+                
+                # Find best match for the claim
+                # cutoff=0.6 (60% similarity) allows for minor rewording/punctuation changes
+                fuzzy_matches = difflib.get_close_matches(claim_text, clean_segments, n=1, cutoff=0.6)
+                
+                if fuzzy_matches:
+                    best_clean_match = fuzzy_matches[0]
+                    # Find the index of this match to get the original segment (which might have tags)
+                    try:
+                        match_index = clean_segments.index(best_clean_match)
+                        target_segment = segments[match_index]
+                        
+                        # Avoid double tagging
+                        if tag in target_segment:
+                            print(f"  ⚠️ Segment already has {tag}, skipping")
+                            continue
+                        
+                        # Now find this target_segment in the highlighted text
+                        # We use re.escape to be safe
+                        segment_pattern = re.escape(target_segment)
+                        matches = list(re.finditer(segment_pattern, highlighted))
+                        
                         if matches:
-                            print(f"  💡 Found via partial match: \"{key_phrase}\"")
-                            break
+                            ratio = difflib.SequenceMatcher(None, claim_text, best_clean_match).ratio()
+                            print(f"  💡 Found via fuzzy match (score={ratio:.2f}): \"{best_clean_match[:50]}...\"")
+                    except ValueError:
+                        pass
             
             if matches:
                 # Replace from end to start to preserve positions
                 for match in reversed(matches):
                     # Insert tag before the match
                     start = match.start()
-                    highlighted = highlighted[:start] + tag + ' ' + highlighted[start:]
-                    highlights_added += 1
-                    print(f"  ✅ Added {tag} at position {start}")
+                    end = match.end()
+                    
+                    # Check if already tagged (simple check of preceding chars)
+                    prefix = highlighted[max(0, start-20):start]
+                    if tag not in prefix:
+                        # Create closing tag (e.g. [VERIFIED] -> [/VERIFIED])
+                        closing_tag = tag.replace('[', '[/')
+                        
+                        # Insert tag BEFORE and closing tag AFTER the match
+                        # We use the matched segment exactly as is
+                        highlighted = (
+                            highlighted[:start] + 
+                            tag + ' ' + 
+                            highlighted[start:end] + 
+                            closing_tag + 
+                            highlighted[end:]
+                        )
+                        
+                        highlights_added += 1
+                        print(f"  ✅ Added {tag}...{closing_tag} at position {start}")
             else:
-                print(f"  ❌ NOT FOUND (tried exact + partial)")
+                print(f"  ❌ NOT FOUND (tried exact + fuzzy)")
         
         if highlights_added > 0:
             print(f"✅ Added {highlights_added} highlights to transcript")

@@ -1347,9 +1347,10 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
       // If we're still in a highlight at end of paragraph, close it
       if (newActiveHighlight) {
         fixedText = fixedText + `[/${newActiveHighlight}]`;
+        activeHighlight = null;  // Highlight is closed, don't propagate
+      } else {
+        activeHighlight = null;  // No active highlight
       }
-      
-      activeHighlight = newActiveHighlight;
       
       return { ...para, text: fixedText };
     });
