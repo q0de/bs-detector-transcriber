@@ -44,10 +44,37 @@ export default function DashboardPage() {
   });
   const [recentVideos, setRecentVideos] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState("");
   const [currentAnalysisType, setCurrentAnalysisType] = useState("fact-check");
   const [showLoginMessage, setShowLoginMessage] = useState(location.state?.loginSuccess || false);
   const loginMessage = location.state?.message;
+
+  // Fetch full video data if coming from history (which only has metadata)
+  useEffect(() => {
+    const fetchFullVideoData = async () => {
+      const result = location.state?.videoResult;
+      // If we have a video ID but missing analysis/transcription, fetch full data
+      if (result?.id && !result.transcription && !result.analysis) {
+        console.log("📥 Fetching full video data for:", result.id);
+        setIsLoadingVideo(true);
+        try {
+          const response = await videoAPI.getVideo(result.id);
+          const fullData = response.data;
+          if (fullData.analysis) {
+            fullData.analysis = parseAnalysis(fullData.analysis);
+          }
+          setVideoResult(fullData);
+          console.log("✅ Full video data loaded:", fullData);
+        } catch (err) {
+          console.error("Failed to fetch full video data:", err);
+        } finally {
+          setIsLoadingVideo(false);
+        }
+      }
+    };
+    fetchFullVideoData();
+  }, [location.state?.videoResult?.id]);
 
   useEffect(() => {
     fetchRecentVideos();
@@ -146,7 +173,9 @@ export default function DashboardPage() {
             <CardHeader className="bg-success-50">
               <div className="flex items-center gap-2 text-success">
                 <Icon icon="solar:check-circle-bold" width={24} />
-                <h2 className="font-semibold">Video Processed Successfully!</h2>
+                <h2 className="font-semibold">
+                  {isLoadingVideo ? "Loading Video Results..." : "Video Processed Successfully!"}
+                </h2>
               </div>
             </CardHeader>
             <CardBody className="gap-4">
