@@ -134,11 +134,121 @@ class VideoProcessor:
         return base_url, None
     
     def auto_highlight_transcript(self, transcript, analysis):
-        """Automatically add highlight tags to transcript based on claims"""
+        """Automatically add highlight tags to transcript based on claims.
+        
+        Uses multi-strategy matching:
+        1. Exact match (case-insensitive)
+        2. Fuzzy sentence matching (45% threshold)
+        3. Sliding window matching
+        4. Key phrase extraction
+        5. Word overlap scoring
+        """
         if not transcript or not isinstance(analysis, dict):
             return transcript
         
-        print("🎨 Auto-highlighting transcript based on claims (Exact + Fuzzy Match)...")
+        print("🎨 Auto-highlighting transcript (Enhanced Multi-Strategy Matching)...")
+        
+        # Common words to ignore in word overlap scoring
+        STOP_WORDS = {
+            'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare',
+            'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
+            'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above',
+            'below', 'between', 'under', 'again', 'further', 'then', 'once', 'here',
+            'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few', 'more',
+            'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own',
+            'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or',
+            'because', 'until', 'while', 'although', 'though', 'this', 'that',
+            'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what',
+            'which', 'who', 'whom', 'its', 'his', 'her', 'their', 'my', 'your',
+            'our', 'me', 'him', 'them', 'us', 'also', 'like', 'really', 'actually',
+            'basically', 'literally', 'think', 'know', 'say', 'said', 'says', 'going'
+        }
+        
+        def get_content_words(text):
+            """Extract meaningful content words from text"""
+            words = re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
+            return [w for w in words if w not in STOP_WORDS]
+        
+        def word_overlap_score(text1, text2):
+            """Calculate word overlap score between two texts"""
+            words1 = set(get_content_words(text1))
+            words2 = set(get_content_words(text2))
+            if not words1 or not words2:
+                return 0
+            intersection = words1 & words2
+            # Jaccard-like score weighted towards the claim (text1)
+            return len(intersection) / len(words1) if words1 else 0
+        
+        def extract_key_phrases(text, min_words=3, max_words=5):
+            """Extract distinctive phrases from text"""
+            words = text.split()
+            phrases = []
+            # Get phrases of different lengths
+            for length in range(min_words, min(max_words + 1, len(words) + 1)):
+                for i in range(len(words) - length + 1):
+                    phrase = ' '.join(words[i:i + length])
+                    # Only include phrases with content words
+                    content_words = get_content_words(phrase)
+                    if len(content_words) >= 2:
+                        phrases.append(phrase)
+            return phrases
+        
+        def create_sliding_windows(text, window_words=75, overlap_words=25):
+            """Create overlapping windows of text"""
+            words = text.split()
+            windows = []
+            step = window_words - overlap_words
+            for i in range(0, max(1, len(words) - window_words + 1), step):
+                window_text = ' '.join(words[i:i + window_words])
+                start_approx = text.find(words[i]) if i < len(words) else 0
+                windows.append((window_text, start_approx))
+            # Add remaining text as final window if needed
+            if len(words) > window_words:
+                remaining = ' '.join(words[-(window_words):])
+                if remaining not in [w[0] for w in windows]:
+                    windows.append((remaining, max(0, len(text) - len(remaining))))
+            return windows
+        
+        def smart_split_transcript(text):
+            """Split transcript into segments using multiple strategies"""
+            segments = []
+            
+            # Strategy 1: Split by punctuation
+            punct_segments = re.split(r'(?<=[.!?])\s+', text)
+            segments.extend(punct_segments)
+            
+            # Strategy 2: Split by newlines
+            newline_segments = text.split('\n')
+            for seg in newline_segments:
+                if seg.strip() and seg.strip() not in segments:
+                    segments.append(seg.strip())
+            
+            # Strategy 3: Split by ellipsis (pauses)
+            ellipsis_segments = re.split(r'\.{3,}|\s{3,}', text)
+            for seg in ellipsis_segments:
+                if seg.strip() and len(seg.strip()) > 20:
+                    segments.append(seg.strip())
+            
+            # Strategy 4: Split by comma for long segments (creates sub-clauses)
+            for seg in punct_segments:
+                if len(seg) > 150:
+                    comma_parts = seg.split(',')
+                    for part in comma_parts:
+                        if part.strip() and len(part.strip()) > 30:
+                            segments.append(part.strip())
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_segments = []
+            for seg in segments:
+                normalized = ' '.join(seg.split())
+                if normalized and normalized not in seen and len(normalized) > 15:
+                    seen.add(normalized)
+                    unique_segments.append(seg)
+            
+            return unique_segments
         
         # Collect all claims with their verdicts
         claims_with_tags = []
@@ -146,7 +256,7 @@ class VideoProcessor:
         for claim_type, tag in [
             ('verified_claims', '[VERIFIED]'),
             ('opinion_claims', '[OPINION]'),
-            ('opinion_based_claims', '[OPINION]'),  # Handle both variations
+            ('opinion_based_claims', '[OPINION]'),
             ('uncertain_claims', '[UNCERTAIN]'),
             ('false_claims', '[FALSE]')
         ]:
@@ -154,12 +264,14 @@ class VideoProcessor:
             if claims_list:
                 for claim_obj in claims_list:
                     claim_text = claim_obj.get('claim', '').strip()
-                    if claim_text and len(claim_text) > 10:  # Only process meaningful claims
+                    if claim_text and len(claim_text) > 10:
                         claims_with_tags.append((claim_text, tag))
         
         if not claims_with_tags:
             print("⚠️ No claims found to highlight")
             return transcript
+        
+        print(f"  📋 Found {len(claims_with_tags)} claims to highlight")
         
         # Sort claims by length (longest first) to avoid partial matches
         claims_with_tags.sort(key=lambda x: len(x[0]), reverse=True)
@@ -167,69 +279,126 @@ class VideoProcessor:
         highlighted = transcript
         highlights_added = 0
         
-        # Add tags before each claim in the transcript
+        # Pre-compute segments and windows for efficiency
+        segments = smart_split_transcript(highlighted)
+        clean_segments = [re.sub(r'\[/?(?:VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', s).strip() for s in segments]
+        windows = create_sliding_windows(highlighted)
+        
         for claim_text, tag in claims_with_tags:
-            # Normalize whitespace
             normalized_claim = ' '.join(claim_text.split())
+            print(f"  🔍 {tag}: \"{normalized_claim[:60]}...\"")
             
-            print(f"  🔍 Searching for {tag}: \"{normalized_claim[:80]}...\"")
+            match_found = False
+            match_text = None
+            match_method = None
             
-            # Strategy 1: Try exact match (case-insensitive, flexible whitespace)
+            # === Strategy 1: Exact match ===
             pattern = re.escape(normalized_claim)
             pattern = pattern.replace(r'\ ', r'\s+')
-            matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
+            exact_matches = list(re.finditer(pattern, highlighted, re.IGNORECASE))
             
-            # Strategy 2: Fuzzy matching with difflib
-            if not matches:
-                # Split transcript into sentences/segments to find best candidate
-                # Split by common sentence terminators
-                segments = re.split(r'(?<=[.!?])\s+', highlighted)
-                
-                # Clean segments for comparison (remove tags if any exist from previous iterations)
-                clean_segments = [re.sub(r'\[/?(?:VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', s).strip() for s in segments]
-                
-                # Find best match for the claim
-                # cutoff=0.6 (60% similarity) allows for minor rewording/punctuation changes
-                fuzzy_matches = difflib.get_close_matches(claim_text, clean_segments, n=1, cutoff=0.6)
-                
+            if exact_matches:
+                match_found = True
+                match_text = exact_matches[0].group()
+                match_method = "exact"
+            
+            # === Strategy 2: Fuzzy sentence matching (lowered to 0.45) ===
+            if not match_found:
+                fuzzy_matches = difflib.get_close_matches(claim_text, clean_segments, n=1, cutoff=0.45)
                 if fuzzy_matches:
-                    best_clean_match = fuzzy_matches[0]
-                    # Find the index of this match to get the original segment (which might have tags)
-                    try:
-                        match_index = clean_segments.index(best_clean_match)
-                        target_segment = segments[match_index]
-                        
-                        # Avoid double tagging
-                        if tag in target_segment:
-                            print(f"  ⚠️ Segment already has {tag}, skipping")
-                            continue
-                        
-                        # Now find this target_segment in the highlighted text
-                        # We use re.escape to be safe
-                        segment_pattern = re.escape(target_segment)
-                        matches = list(re.finditer(segment_pattern, highlighted))
-                        
-                        if matches:
-                            ratio = difflib.SequenceMatcher(None, claim_text, best_clean_match).ratio()
-                            print(f"  💡 Found via fuzzy match (score={ratio:.2f}): \"{best_clean_match[:50]}...\"")
-                    except ValueError:
-                        pass
+                    best_match = fuzzy_matches[0]
+                    ratio = difflib.SequenceMatcher(None, claim_text, best_match).ratio()
+                    match_found = True
+                    match_text = best_match
+                    match_method = f"fuzzy-sentence({ratio:.2f})"
             
-            if matches:
-                # Replace from end to start to preserve positions
-                for match in reversed(matches):
-                    # Insert tag before the match
+            # === Strategy 3: Sliding window matching ===
+            if not match_found:
+                best_window_match = None
+                best_window_score = 0.45  # Minimum threshold
+                
+                for window_text, _ in windows:
+                    clean_window = re.sub(r'\[/?(?:VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', window_text)
+                    ratio = difflib.SequenceMatcher(None, claim_text.lower(), clean_window.lower()).ratio()
+                    if ratio > best_window_score:
+                        best_window_score = ratio
+                        best_window_match = window_text
+                
+                if best_window_match:
+                    match_found = True
+                    match_text = best_window_match
+                    match_method = f"sliding-window({best_window_score:.2f})"
+            
+            # === Strategy 4: Key phrase matching ===
+            if not match_found:
+                key_phrases = extract_key_phrases(claim_text)
+                for phrase in key_phrases[:5]:  # Try top 5 phrases
+                    phrase_pattern = re.escape(phrase)
+                    phrase_pattern = phrase_pattern.replace(r'\ ', r'\s+')
+                    phrase_matches = list(re.finditer(phrase_pattern, highlighted, re.IGNORECASE))
+                    
+                    if phrase_matches:
+                        # Found a key phrase - expand to sentence boundary
+                        match_pos = phrase_matches[0].start()
+                        # Find sentence boundaries around this position
+                        text_before = highlighted[:match_pos]
+                        text_after = highlighted[match_pos:]
+                        
+                        # Find start of sentence
+                        start_markers = [text_before.rfind('. '), text_before.rfind('! '), 
+                                        text_before.rfind('? '), text_before.rfind('\n')]
+                        sent_start = max(start_markers) + 2 if max(start_markers) >= 0 else 0
+                        
+                        # Find end of sentence
+                        end_markers = []
+                        for marker in ['. ', '! ', '? ', '\n']:
+                            pos = text_after.find(marker)
+                            if pos >= 0:
+                                end_markers.append(pos)
+                        sent_end = match_pos + (min(end_markers) + 1 if end_markers else len(text_after))
+                        
+                        match_text = highlighted[sent_start:sent_end].strip()
+                        match_found = True
+                        match_method = f"key-phrase('{phrase[:20]}...')"
+                        break
+            
+            # === Strategy 5: Word overlap scoring ===
+            if not match_found:
+                best_overlap_segment = None
+                best_overlap_score = 0.4  # Minimum 40% content word overlap
+                
+                for seg in clean_segments:
+                    if len(seg) > 20:  # Skip very short segments
+                        score = word_overlap_score(claim_text, seg)
+                        if score > best_overlap_score:
+                            best_overlap_score = score
+                            best_overlap_segment = seg
+                
+                if best_overlap_segment:
+                    match_found = True
+                    match_text = best_overlap_segment
+                    match_method = f"word-overlap({best_overlap_score:.2f})"
+            
+            # === Apply the highlight ===
+            if match_found and match_text:
+                # Clean the match text for searching
+                clean_match = re.sub(r'\[/?(?:VERIFIED|OPINION|UNCERTAIN|FALSE)\]', '', match_text).strip()
+                
+                # Find this text in the transcript
+                search_pattern = re.escape(clean_match)
+                search_pattern = search_pattern.replace(r'\ ', r'\s+')
+                text_matches = list(re.finditer(search_pattern, highlighted, re.IGNORECASE))
+                
+                if text_matches:
+                    # Apply to first match only, from end to preserve positions
+                    match = text_matches[0]
                     start = match.start()
                     end = match.end()
                     
-                    # Check if already tagged (simple check of preceding chars)
+                    # Check if already tagged
                     prefix = highlighted[max(0, start-20):start]
-                    if tag not in prefix:
-                        # Create closing tag (e.g. [VERIFIED] -> [/VERIFIED])
+                    if tag not in prefix and f'[/{tag[1:]}' not in highlighted[start:end]:
                         closing_tag = tag.replace('[', '[/')
-                        
-                        # Insert tag BEFORE and closing tag AFTER the match
-                        # We use the matched segment exactly as is
                         highlighted = (
                             highlighted[:start] + 
                             tag + ' ' + 
@@ -237,16 +406,16 @@ class VideoProcessor:
                             closing_tag + 
                             highlighted[end:]
                         )
-                        
                         highlights_added += 1
-                        print(f"  ✅ Added {tag}...{closing_tag} at position {start}")
+                        print(f"    ✅ {match_method}")
+                    else:
+                        print(f"    ⚠️ Already tagged, skipping")
+                else:
+                    print(f"    ❌ Match text not found in transcript")
             else:
-                print(f"  ❌ NOT FOUND (tried exact + fuzzy)")
+                print(f"    ❌ No match found (tried all strategies)")
         
-        if highlights_added > 0:
-            print(f"✅ Added {highlights_added} highlights to transcript")
-        else:
-            print("⚠️ Could not find any claims in transcript to highlight")
+        print(f"🎨 Highlighting complete: {highlights_added}/{len(claims_with_tags)} claims highlighted")
         
         return highlighted
     

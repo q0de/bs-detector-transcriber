@@ -1,44 +1,44 @@
-<!-- 18be4b66-23ce-402f-a5d5-0191ebf1e961 79a66868-c306-4ed2-a84e-77ece8ab4b30 -->
-# Fix Highlight Propagation Bug
+<!-- 18be4b66-23ce-402f-a5d5-0191ebf1e961 e1e07895-248e-4dfb-8835-fee4028cc4c7 -->
+# Improve Transcript Highlighting Matching
 
-The highlighting appears on nearly everything because of a bug in the frontend's paragraph-splitting logic. When a paragraph has an unclosed `[VERIFIED]` tag, the code adds a closing tag but ALSO incorrectly propagates the highlight to subsequent paragraphs.
+The current `auto_highlight_transcript` function in [backend/services/video_processor.py](backend/services/video_processor.py) misses many claims because it relies on:
 
-## Root Cause
+- 60% similarity threshold (too strict for paraphrased claims)
+- Sentence boundary splitting (transcripts often lack punctuation)
+- Full claim matching (long claims rarely match verbatim)
 
-In [frontend/src/components/AnalysisResults.jsx](frontend/src/components/AnalysisResults.jsx) lines 1336-1354:
+## Changes to `auto_highlight_transcript`
 
-```javascript
-if (newActiveHighlight) {
-  fixedText = fixedText + `[/${newActiveHighlight}]`;
-}
-activeHighlight = newActiveHighlight;  // BUG: Should be null after closing!
-```
+### 1. Lower fuzzy match threshold
 
-When we add a closing tag, `activeHighlight` should be set to `null` (the highlight is now closed), but instead it's set to `newActiveHighlight` which causes the next paragraph to incorrectly receive an opening tag.
+Change cutoff from 0.6 to 0.45 for more lenient matching.
 
-## Fix
+### 2. Add sliding window matching
 
-Change the logic to NOT propagate highlights after we've auto-closed them:
+Instead of only splitting by sentences, use overlapping windows of ~50-100 words to find partial matches.
 
-```javascript
-if (newActiveHighlight) {
-  fixedText = fixedText + `[/${newActiveHighlight}]`;
-  activeHighlight = null;  // Highlight is closed, don't propagate
-} else {
-  activeHighlight = null;  // No active highlight
-}
-```
+### 3. Add key phrase extraction
 
-This ensures:
+Extract the most distinctive 3-5 word phrases from each claim and search for those if full match fails.
 
-1. If a paragraph has an unbalanced highlight, we close it at paragraph end
-2. We do NOT propagate the highlight to the next paragraph
-3. Each paragraph's highlights are self-contained
+### 4. Add word overlap scoring
 
-## Files to Modify
+As a fallback, find transcript segments with highest word overlap with the claim (ignoring common words like "the", "is", "and").
 
-- [frontend/src/components/AnalysisResults.jsx](frontend/src/components/AnalysisResults.jsx): Fix the `splitIntoParagraphs` function (around line 1352)
+### 5. Improve transcript splitting
+
+Split by multiple patterns: punctuation, speaker changes, pauses (indicated by "..." or newlines), and time-based segments if available.
+
+## Expected Result
+
+More claims will be matched and highlighted, improving coverage from ~30-40% to ~70-80% of identified claims.
 
 ### To-dos
 
 - [ ] Update backend/services/video_processor.py with fuzzy matching logic
+- [ ] Verify the implementation respects the 'Selective' highlighting policy
+- [ ] Lower fuzzy match cutoff from 0.6 to 0.45
+- [ ] Add sliding window matching for partial claim matches
+- [ ] Extract and search for distinctive key phrases from claims
+- [ ] Add word overlap scoring as final fallback strategy
+- [ ] Improve transcript splitting to handle missing punctuation
