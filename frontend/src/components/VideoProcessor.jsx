@@ -9,6 +9,7 @@ import {
   Tab,
   Divider,
   Image,
+  Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { videoAPI } from "../services/api";
@@ -314,14 +315,18 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           <Button
             color="primary"
             size="lg"
-            className="h-auto py-5 flex-col gap-1"
+            className="h-auto py-5 flex-col gap-1 relative overflow-hidden"
             onPress={() => {
               setAnalysisType("summarize");
               handleSubmit("summarize");
             }}
-            isLoading={isLoading && analysisType === "summarize"}
             isDisabled={isLoading || (inputType === "url" && !url) || (inputType === "file" && !file)}
           >
+            {isLoading && analysisType === "summarize" && (
+              <div className="absolute inset-0 bg-primary/80 flex items-center justify-center z-10">
+                <Spinner color="white" size="lg" />
+              </div>
+            )}
             <Icon icon="solar:document-text-linear" width={24} />
             <span className="font-semibold">Summarize</span>
             <span className="text-xs opacity-70">Quick overview • 1× minutes</span>
@@ -329,14 +334,18 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
           <Button
             color="secondary"
             size="lg"
-            className="h-auto py-5 flex-col gap-1"
+            className="h-auto py-5 flex-col gap-1 relative overflow-hidden"
             onPress={() => {
               setAnalysisType("fact-check");
               handleSubmit("fact-check");
             }}
-            isLoading={isLoading && analysisType === "fact-check"}
             isDisabled={isLoading || (inputType === "url" && !url) || (inputType === "file" && !file)}
           >
+            {isLoading && analysisType === "fact-check" && (
+              <div className="absolute inset-0 bg-secondary/80 flex items-center justify-center z-10">
+                <Spinner color="white" size="lg" />
+              </div>
+            )}
             <Icon icon="solar:magnifer-linear" width={24} />
             <span className="font-semibold">Fact Check ⭐</span>
             <span className="text-xs opacity-70">Full BS detection • 2.5× minutes</span>
