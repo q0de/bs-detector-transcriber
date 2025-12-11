@@ -389,6 +389,38 @@ function SummaryCard({ summary }) {
 
   const { mainContent, importantDetails, conclusion } = extractSpecialSections(summaryText);
   
+  // Generate TL;DR - take first meaningful sentence(s), max ~150 chars
+  const generateTLDR = (text) => {
+    if (!text || typeof text !== 'string') return null;
+    // Clean markdown and get plain text
+    const clean = text
+      .replace(/#{1,6}\s*/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Find first 1-2 sentences
+    const sentences = clean.match(/[^.!?]+[.!?]+/g);
+    if (!sentences || sentences.length === 0) {
+      return clean.substring(0, 150) + (clean.length > 150 ? '...' : '');
+    }
+    
+    let tldr = sentences[0].trim();
+    if (tldr.length < 80 && sentences[1]) {
+      tldr += ' ' + sentences[1].trim();
+    }
+    
+    // Cap at ~180 chars
+    if (tldr.length > 180) {
+      tldr = tldr.substring(0, 177) + '...';
+    }
+    
+    return tldr;
+  };
+  
+  const tldr = generateTLDR(mainContent);
+  
   return (
     <Card className="dark:border-default-100 border border-transparent">
       <div className="flex flex-col gap-y-2 p-4 pb-0">
@@ -398,6 +430,16 @@ function SummaryCard({ summary }) {
         </div>
       </div>
       <div className="p-4 space-y-4">
+        {/* TL;DR - Quick Overview */}
+        {tldr && (
+          <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+            <p className="text-foreground font-medium text-sm flex items-start gap-2">
+              <Icon icon="solar:bolt-bold" className="text-primary flex-shrink-0 mt-0.5" width={16} />
+              <span>{tldr}</span>
+            </p>
+          </div>
+        )}
+        
         {/* Main content */}
         <div>{formatSummary(mainContent)}</div>
         
@@ -1165,6 +1207,8 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
   const [showFull, setShowFull] = useState(false);
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [showHighlights, setShowHighlights] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [copiedTimestamp, setCopiedTimestamp] = useState(null);
   const [visibleTypes, setVisibleTypes] = useState({
     verified: true,
     false: true,
@@ -1194,6 +1238,29 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
   // Toggle a specific highlight type
   const toggleHighlightType = (type) => {
     setVisibleTypes(prev => ({ ...prev, [type]: !prev[type] }));
+  };
+  
+  // Copy entire transcript to clipboard
+  const copyTranscript = async () => {
+    const textToCopy = transcript || highlightedTranscript?.replace(/\[(VERIFIED|FALSE|UNCERTAIN|OPINION|\/VERIFIED|\/FALSE|\/UNCERTAIN|\/OPINION)\]/g, '') || '';
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+  
+  // Copy timestamp to clipboard
+  const copyTimestamp = async (timestamp) => {
+    try {
+      await navigator.clipboard.writeText(timestamp);
+      setCopiedTimestamp(timestamp);
+      setTimeout(() => setCopiedTimestamp(null), 1500);
+    } catch (err) {
+      console.error('Failed to copy timestamp:', err);
+    }
   };
   
   // Strip highlight tags from text
@@ -1470,6 +1537,18 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
                 Highlights {showHighlights ? 'ON' : 'OFF'}
               </Button>
             )}
+            {/* Copy Transcript Button */}
+            <Tooltip content={copied ? "Copied!" : "Copy entire transcript"}>
+              <Button
+                size="sm"
+                variant="light"
+                isIconOnly
+                onPress={copyTranscript}
+                className={copied ? "text-success" : ""}
+              >
+                <Icon icon={copied ? "solar:check-circle-bold" : "solar:copy-linear"} width={18} />
+              </Button>
+            </Tooltip>
             {/* Legend - only show when highlights are on */}
             {showHighlights && highlightedTranscript && (
               <>
@@ -1517,17 +1596,20 @@ function TranscriptCard({ transcript, highlightedTranscript }) {
       <div className="p-4 space-y-4">
         {displayParagraphs.map((paragraph, idx) => (
           <div key={idx} className="flex gap-3">
-            {/* Timestamp column */}
+            {/* Timestamp column - click to copy */}
             {showTimestamps && paragraph.timestamp && (
               <div className="flex-shrink-0 w-16">
-                <Chip 
-                  size="sm" 
-                  variant="flat" 
-                  color="primary"
-                  className="font-mono text-xs"
-                >
-                  {paragraph.timestamp}
-                </Chip>
+                <Tooltip content={copiedTimestamp === paragraph.timestamp ? "Copied!" : "Click to copy"}>
+                  <Chip 
+                    size="sm" 
+                    variant="flat" 
+                    color={copiedTimestamp === paragraph.timestamp ? "success" : "primary"}
+                    className="font-mono text-xs cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => copyTimestamp(paragraph.timestamp)}
+                  >
+                    {paragraph.timestamp}
+                  </Chip>
+                </Tooltip>
               </div>
             )}
             {/* Text content */}
