@@ -311,7 +311,7 @@ export default function VideoProcessor({ onProcessed, onLoadingChange, onProcess
         )}
 
         {/* Action Buttons - Summarize & Fact Check */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           <Button
             color="primary"
             size="lg"
