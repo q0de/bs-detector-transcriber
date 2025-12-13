@@ -1100,13 +1100,43 @@ Be thorough and specific in your correction notes!"""
                 transcription = transcription[:max_chars] + "\n\n[Transcript truncated due to length...]"
             
             if analysis_type == 'summarize':
-                prompt = f"""Please provide a comprehensive summary of the following video transcription. Include:
-1. Main topics discussed
-2. Key points and takeaways
-3. Important details
-4. Overall conclusion
+                prompt = f"""You are analyzing a video transcript. Create a compelling, well-structured summary that's genuinely useful.
 
-Transcription:
+## YOUR TASK
+
+Write a summary in this EXACT format (use markdown):
+
+### ⚡ TL;DR (1-2 sentences max)
+[The single most important takeaway. Be specific, not generic. What would you tell a friend in 10 seconds?]
+
+### 🎯 What This Video Covers
+[2-3 sentences describing the content. Be specific about WHO is speaking, WHAT they're discussing, and WHY it matters.]
+
+### 💡 Key Insights
+- **[Insight 1 title]**: [Explanation in 1-2 sentences]
+- **[Insight 2 title]**: [Explanation in 1-2 sentences]
+- **[Insight 3 title]**: [Explanation in 1-2 sentences]
+[Add more if genuinely valuable, max 6]
+
+### 📊 Notable Claims & Data
+[List any specific numbers, statistics, predictions, or factual claims made. If none, write "No specific data points mentioned."]
+
+### 🤔 Things to Consider
+[Any caveats, potential biases, missing context, or reasons to be skeptical. Be honest about limitations.]
+
+### ✅ Bottom Line
+[1-2 sentences: Is this video worth watching? Who would benefit most from it?]
+
+---
+
+## RULES
+- Be SPECIFIC, not generic. "Discusses economic trends" is bad. "Claims the Fed will cut rates 3 more times in 2024" is good.
+- Use the speaker's actual claims and terminology
+- Don't pad with filler phrases like "The speaker goes on to explain..."
+- If the content is low-quality or vague, say so honestly
+- Keep the entire summary under 400 words
+
+## TRANSCRIPT TO ANALYZE:
 {transcription}"""
             elif analysis_type == 'fact-check':
                 # Determine if transcript is short enough for Claude to add inline highlights
@@ -1445,13 +1475,43 @@ Remember: Return ONLY the JSON object, no other text."""
                 transcription = transcription[:max_chars] + "\n\n[Transcript truncated due to length...]"
             
             if analysis_type == 'summarize':
-                prompt = f"""Please provide a comprehensive summary of the following video transcription. Include:
-1. Main topics discussed
-2. Key points and takeaways
-3. Important details
-4. Overall conclusion
+                prompt = f"""You are analyzing a video transcript. Create a compelling, well-structured summary that's genuinely useful.
 
-Transcription:
+## YOUR TASK
+
+Write a summary in this EXACT format (use markdown):
+
+### ⚡ TL;DR (1-2 sentences max)
+[The single most important takeaway. Be specific, not generic. What would you tell a friend in 10 seconds?]
+
+### 🎯 What This Video Covers
+[2-3 sentences describing the content. Be specific about WHO is speaking, WHAT they're discussing, and WHY it matters.]
+
+### 💡 Key Insights
+- **[Insight 1 title]**: [Explanation in 1-2 sentences]
+- **[Insight 2 title]**: [Explanation in 1-2 sentences]
+- **[Insight 3 title]**: [Explanation in 1-2 sentences]
+[Add more if genuinely valuable, max 6]
+
+### 📊 Notable Claims & Data
+[List any specific numbers, statistics, predictions, or factual claims made. If none, write "No specific data points mentioned."]
+
+### 🤔 Things to Consider
+[Any caveats, potential biases, missing context, or reasons to be skeptical. Be honest about limitations.]
+
+### ✅ Bottom Line
+[1-2 sentences: Is this video worth watching? Who would benefit most from it?]
+
+---
+
+## RULES
+- Be SPECIFIC, not generic. "Discusses economic trends" is bad. "Claims the Fed will cut rates 3 more times in 2024" is good.
+- Use the speaker's actual claims and terminology
+- Don't pad with filler phrases like "The speaker goes on to explain..."
+- If the content is low-quality or vague, say so honestly
+- Keep the entire summary under 400 words
+
+## TRANSCRIPT TO ANALYZE:
 {transcription}"""
                 
                 # Use faster model for summaries if feature flag enabled (keeps same prompts!)
